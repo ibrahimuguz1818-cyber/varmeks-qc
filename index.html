@@ -1,0 +1,1264 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#161718">
+<title>VARMEKS QC — Kontrol Kartı</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='10' fill='%23161718'/%3E%3Cpath d='M13 15h9.5l9.5 25 9.5-25H51L37 50h-10z' fill='%23C8102E'/%3E%3C/svg%3E">
+<style>
+:root{
+  --coal:#161718; --graphite:#1F2123; --graphite2:#272A2D; --steel:#35393D; --rule:#2A2D30;
+  --ash:#8E949A; --lime:#E4E5E3; --red:#C8102E; --ok:#5E9E6E; --warn:#C08A3E; --na:#6D7378;
+  --grain:none;
+  --f:"Bahnschrift","DIN Alternate","DIN Condensed","Roboto Condensed","Arial Narrow",system-ui,sans-serif;
+}
+*{box-sizing:border-box}
+html{background:var(--coal)}
+body{margin:0;color:var(--lime);font-family:var(--f);font-size:15px;line-height:1.45;
+  background-color:var(--coal);background-image:var(--grain);font-variant-numeric:tabular-nums;
+  -webkit-font-smoothing:antialiased}
+button,input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:2px solid #E4E5E3;outline-offset:2px}
+.shell{display:grid;grid-template-columns:236px 1fr;min-height:100vh}
+.shell>div{min-width:0}
+.rail{position:sticky;top:0;height:100vh;padding:26px 18px;border-right:1px solid var(--steel);
+  background-color:#131415;background-image:var(--grain);display:flex;flex-direction:column;gap:28px}
+.emblem svg{display:block;width:170px;height:auto}
+.emblem .sub{color:var(--ash);font-size:13px;margin-top:8px;padding-left:2px}
+.nav{display:flex;flex-direction:column;gap:2px}
+.nav button{display:flex;align-items:center;gap:10px;width:100%;text-align:left;background:none;border:0;
+  padding:10px 12px;border-radius:5px;color:var(--ash);cursor:pointer;font-size:15px;position:relative}
+.nav button:hover{color:var(--lime);background:#1C1E20}
+.nav button[aria-current="page"]{color:var(--lime);background:var(--graphite2)}
+.nav button[aria-current="page"]::before{content:"";position:absolute;left:0;top:9px;bottom:9px;width:3px;border-radius:2px;background:var(--red)}
+.nav svg{width:18px;height:18px;flex:none}
+.rail-foot{margin-top:auto;color:#5f656a;font-size:12px;line-height:1.5}
+.topbar,.bnav{display:none}
+main{padding:30px 34px 60px;max-width:1160px;width:100%}
+h1{font-size:30px;font-weight:600;letter-spacing:-.01em;margin:0 0 4px;line-height:1.15}
+h2{font-size:19px;font-weight:600;margin:0 0 12px}
+h3{font-size:16px;font-weight:600;margin:0 0 8px}
+p{margin:0 0 10px;max-width:78ch}
+.lead{color:var(--ash);margin-bottom:22px}
+.panel{background-color:var(--graphite);background-image:var(--grain);border:1px solid var(--steel);border-radius:8px;padding:18px}
+.stack>*+*{margin-top:16px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.between{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap}
+.muted{color:var(--ash)}
+.small{font-size:13px}
+.btn{background:var(--graphite2);border:1px solid var(--steel);color:var(--lime);border-radius:5px;padding:9px 14px;
+  font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:8px;line-height:1.2}
+.btn:hover{border-color:#4a4f54}
+.btn.pri{background:var(--lime);color:var(--coal);border-color:var(--lime)}
+.btn.pri:hover{background:#fff}
+.btn.ghost{background:none}
+.btn.danger{color:#F3A0A9;border-color:#5a2a30;background:none}
+.btn.sm{padding:6px 10px;font-size:13px}
+.btn[disabled]{opacity:.45;cursor:not-allowed}
+.lb{display:block;font-size:12.5px;color:var(--ash);margin-bottom:5px}
+.in{background:#131415;border:1px solid var(--steel);border-radius:5px;padding:9px 10px;width:100%;color:var(--lime)}
+.in:focus{border-color:#5d6369;outline:none}
+textarea.in{resize:vertical;min-height:62px}
+.seg-btns{display:flex;gap:6px;flex-wrap:wrap}
+.seg-btns button{background:#131415;border:1px solid var(--steel);border-radius:5px;padding:8px 12px;color:var(--ash);cursor:pointer;font-weight:600}
+.seg-btns button[aria-pressed="true"]{background:var(--lime);color:var(--coal);border-color:var(--lime)}
+/* KPIs */
+.kpis{display:grid;grid-template-columns:repeat(6,1fr);gap:1px;background:var(--steel);border:1px solid var(--steel);border-radius:8px;overflow:hidden}
+.kpi{background-color:var(--graphite);background-image:var(--grain);padding:14px 14px 12px}
+.kpi b{display:block;font-size:28px;font-weight:600;line-height:1.1}
+.kpi span{font-size:12.5px;color:var(--ash)}
+.kpi.alert b{color:#F3A0A9}
+/* line strip */
+.line{display:grid;grid-template-columns:repeat(11,1fr);gap:3px}
+.seg{height:8px;border-radius:2px;background:#2C2F33}
+.line.big .seg{height:16px}
+.seg.ok{background:var(--ok)} .seg.nok{background:var(--warn)} .seg.hold{background:var(--red)}
+.seg.part{background:linear-gradient(90deg,#7B8288 0 50%,#2C2F33 50% 100%)}
+.seg.none{background:transparent;border:1px dashed #33373b}
+.seg-l{display:block;font-size:11.5px;color:var(--ash);margin-top:6px;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.heat .seg{height:auto;min-height:56px;display:flex;flex-direction:column;justify-content:flex-end;padding:6px 5px;border-radius:4px}
+.heat .seg b{font-size:20px;font-weight:600;line-height:1}
+.heat .seg small{font-size:11px;color:rgba(228,229,227,.7)}
+/* status */
+.st{display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:600;padding:4px 9px;border-radius:4px;border:1px solid var(--steel);white-space:nowrap}
+.st::before{content:"";width:7px;height:7px;border-radius:50%;background:currentColor}
+.st.ok{color:#8FCB9E;border-color:#2f4a36}
+.st.nok{color:#E2B26A;border-color:#5a4426}
+.st.hold{color:#fff;background:var(--red);border-color:var(--red)}
+.st.run{color:var(--ash)}
+/* chips */
+.chip{display:inline-block;font-size:11.5px;padding:1px 6px;border-radius:3px;border:1px solid var(--steel);color:var(--ash);white-space:nowrap}
+.chip.K{color:#F3A0A9;border-color:#5a2a30}
+.chip.M{color:#D9B47C;border-color:#54442b}
+.chip.rec{border-style:dashed;color:#cfd3d6}
+.chip.bad{color:#F3A0A9;border-color:#5a2a30}
+.chip.good{color:#8FCB9E;border-color:#2f4a36}
+/* tables */
+.tbl{width:100%;border-collapse:collapse;font-size:14px}
+.tbl th{color:var(--ash);font-weight:600;text-align:left;border-bottom:1px solid var(--steel);padding:8px 8px;font-size:13px}
+.tbl td{border-bottom:1px solid var(--rule);padding:9px 8px;vertical-align:top}
+.tbl tr:last-child td{border-bottom:0}
+.tbl .num{text-align:right;white-space:nowrap}
+.scroll{overflow-x:auto}
+/* bars */
+.bar{height:10px;background:#2C2F33;border-radius:2px;overflow:hidden;min-width:60px}
+.bar i{display:block;height:100%;background:var(--warn)}
+.bar.red i{background:var(--red)}
+.bar.ok i{background:var(--ok)}
+.bar.ash i{background:#7B8288}
+/* list */
+.rec-row{display:grid;grid-template-columns:1.2fr 1fr 150px 70px;gap:14px;align-items:center;padding:12px 14px;border-top:1px solid var(--rule);cursor:pointer;background:none;border-left:0;border-right:0;border-bottom:0;width:100%;text-align:left;color:inherit}
+.rec-row:hover{background:#232528}
+.grp{border:1px solid var(--steel);border-radius:8px;overflow:hidden;background-color:var(--graphite);background-image:var(--grain)}
+.grp-h{display:grid;grid-template-columns:1.2fr 1fr 150px 70px;gap:14px;align-items:center;padding:14px;width:100%;background:none;border:0;cursor:pointer;text-align:left;color:inherit}
+.grp-h:hover{background:#232528}
+.serial{font-size:17px;font-weight:600;letter-spacing:.01em}
+/* checklist */
+.station{border:1px solid var(--steel);border-radius:8px;overflow:hidden;background-color:var(--graphite);background-image:var(--grain)}
+.station-h{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:11px 14px;background:#1A1C1E;border-bottom:1px solid var(--steel)}
+.station-h h3{margin:0;font-size:15.5px}
+.item{display:grid;grid-template-columns:1fr auto;gap:12px;padding:12px 14px;border-top:1px solid var(--rule)}
+.item:first-of-type{border-top:0}
+.item.isnok{box-shadow:inset 3px 0 0 var(--warn)}
+.item.iscrit{box-shadow:inset 3px 0 0 var(--red)}
+.item .p{font-weight:600}
+.item .no{color:var(--ash);margin-right:6px;font-weight:500}
+.item .spec{color:var(--ash);font-size:13.5px;margin:2px 0 6px}
+.marks{display:grid;grid-template-columns:auto auto;gap:6px 10px;align-items:center;justify-items:end}
+.marks .who{font-size:12px;color:var(--ash)}
+.mk{display:flex;gap:4px}
+.mk button{min-width:46px;height:34px;border-radius:5px;border:1px solid var(--steel);background:#131415;color:var(--ash);font-weight:700;cursor:pointer;font-size:13px}
+.mk button[aria-pressed="true"][data-v="OK"]{background:var(--ok);border-color:var(--ok);color:#0e1a12}
+.mk button[aria-pressed="true"][data-v="NOK"]{background:var(--warn);border-color:var(--warn);color:#1d1408}
+.mk button[aria-pressed="true"][data-v="NA"]{background:var(--na);border-color:var(--na);color:#111}
+.meas{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:4px}
+.meas .in{width:120px;padding:7px 9px}
+.tabs{display:flex;gap:2px;border-bottom:1px solid var(--steel);margin-bottom:14px;flex-wrap:wrap}
+.tabs button{background:none;border:0;border-bottom:2px solid transparent;padding:10px 14px;color:var(--ash);cursor:pointer;font-weight:600;margin-bottom:-1px}
+.tabs button[aria-selected="true"]{color:var(--lime);border-bottom-color:var(--lime)}
+.toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:14px}
+.back{background:none;border:0;color:var(--ash);cursor:pointer;padding:0;margin-bottom:12px;font-weight:600}
+.back:hover{color:var(--lime)}
+.empty{padding:28px;text-align:center;color:var(--ash)}
+.note{border-left:3px solid var(--steel);padding:2px 0 2px 12px;color:var(--ash);font-size:13.5px}
+.issue{border-top:1px solid var(--rule);padding:12px 0}
+.issue:first-child{border-top:0;padding-top:0}
+.cloudst{display:inline-flex;align-items:center;gap:7px;font-size:12px;color:var(--ash);white-space:nowrap}
+.cloudst::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--na);flex:none}
+.cloudst.st-ok::before{background:var(--ok)}.cloudst.st-sync::before,.cloudst.st-wait::before{background:var(--warn)}
+.cloudst.st-err::before,.cloudst.st-login::before{background:var(--red)}
+.topbar .cloudst{margin-left:auto}
+.lab{display:block;font-size:13px;color:var(--ash);margin:0 0 12px}.lab .in{margin-top:5px}
+#login{position:fixed;inset:0;z-index:60;background:rgba(14,15,16,.96);display:flex;align-items:center;justify-content:center;padding:16px}
+#login[hidden]{display:none}
+.lgbox{width:100%;max-width:380px;background:var(--graphite);border:1px solid var(--steel);border-radius:10px;padding:26px}
+.lgbox .emblem svg{width:150px;margin-bottom:18px}
+.lgerr{color:#F3A0A9;font-size:13px;margin:0 0 12px}
+.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--lime);color:var(--coal);padding:10px 16px;border-radius:6px;font-weight:600;z-index:50;max-width:90vw}
+@media (max-width:980px){
+  .kpis{grid-template-columns:repeat(3,1fr)}
+}
+@media (max-width:860px){
+  .shell{grid-template-columns:1fr}
+  .rail{display:none}
+  .topbar{display:flex;align-items:center;justify-content:space-between;padding:12px 16px calc(12px);padding-top:calc(12px + env(safe-area-inset-top,0px));border-bottom:1px solid var(--steel);background-color:#131415;background-image:var(--grain);position:sticky;top:0;z-index:20}
+  .topbar svg{width:118px;height:auto}
+  .bnav{display:grid;grid-template-columns:repeat(5,1fr);position:fixed;left:0;right:0;bottom:0;z-index:20;border-top:1px solid var(--steel);
+    background-color:#131415;background-image:var(--grain);padding-bottom:env(safe-area-inset-bottom,0px)}
+  .bnav button{background:none;border:0;color:var(--ash);padding:9px 2px 10px;font-size:12px;display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer}
+  .bnav button[aria-current="page"]{color:var(--lime)}
+  .bnav svg{width:20px;height:20px}
+  main{padding:18px 14px 96px}
+  h1{font-size:24px}
+  .grid2,.grid3{grid-template-columns:1fr}
+  .kpis{grid-template-columns:repeat(2,1fr)}
+  .rec-row,.grp-h{grid-template-columns:1fr auto;gap:8px}
+  .rec-row .hide-m,.grp-h .hide-m{display:none}
+  .item{grid-template-columns:1fr}
+  .marks{justify-items:start}
+  .line.big .seg-l{display:none}
+  .heat{grid-template-columns:repeat(11,minmax(58px,1fr))}
+  .seg-btns button{padding:7px 10px}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+</head>
+<body>
+<div class="shell">
+  <aside class="rail">
+    <div class="emblem" id="emblemRail"></div>
+    <nav class="nav" id="navRail" aria-label="Ana menü"></nav>
+    <div class="rail-foot"><span class="cloudst"></span><br>Üretim kalite kontrol. Veriler bulutta saklanır, bu cihazda önbellek tutulur.</div>
+  </aside>
+  <div>
+    <header class="topbar"><div id="emblemTop"></div><span class="muted small">Kalite kontrol</span><span class="cloudst"></span></header>
+    <main id="v"></main>
+  </div>
+</div>
+<nav class="bnav" id="navBottom" aria-label="Ana menü"></nav>
+<div id="boot-err" style="display:none;position:fixed;inset:auto 10px 80px 10px;background:#5a1d24;color:#fff;padding:10px;border-radius:6px;z-index:99;font-size:13px"></div>
+<script>
+/* Supabase bağlantısı: proje adresi ve anon (public) anahtar. Boş bırakılırsa uygulama içinden girilebilir. */
+window.QC_CLOUD = { url: "https://fnegpkvldgsxnmyskgid.supabase.co", key: "ANON_KEY_BURAYA" };
+</script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script>
+var CHK_DEVICES = [{"key": "8kW", "label": "VARM UP 8 kW", "doc": "FR-063-2", "model": "VM-1MB1112008"}, {"key": "13kW", "label": "VARM UP 13 kW", "doc": "FR-063-1", "model": "VM-1MB1112013"}, {"key": "16kW", "label": "VARM UP 16 kW", "doc": "FR-063", "model": "VM-1MB1112016"}, {"key": "18kW", "label": "VARM UP 18 kW", "doc": "FR-063-3", "model": "VM-1MB1112018"}];
+var CHK_CATALOG = {"8kW": {"label": "VARM UP 8 kW", "doc": "FR-063-2", "model": "VM-1MB1112008", "items": [{"no": 1, "st": "Masa Kaynak Bölümü", "p": "EEV Yön Kontrolü", "m": "-", "k": "Teknik Resim/Görsel Kontrol"}, {"no": 2, "st": "Masa Kaynak Bölümü", "p": "Ana EEV Kodu", "m": "HA-0669", "k": "P113C-03"}, {"no": 3, "st": "Masa Kaynak Bölümü", "p": "Ekonomizer Kod Kontrolü", "m": "Hrale, B3-6R-20-4.5", "k": "Doğru/ Yanlış"}, {"no": 4, "st": "Masa Kaynak Bölümü", "p": "Eşanjör Kod Kontrolü", "m": "Hrale, B3-40RD-36-4,5", "k": "Doğru/ Yanlış"}, {"no": 5, "st": "Masa Kaynak Bölümü", "p": "Ekonomizer-Ana EEV Konum", "m": "-", "k": "F4"}, {"no": 6, "st": "Masa Kaynak Bölümü", "p": "Yardımcı EEV Kodu", "m": "HA-0670", "k": "P110C-02"}, {"no": 7, "st": "Masa Kaynak Bölümü", "p": "Ekonomizer- Yardımcı EEV Konumu", "m": "-", "k": "F3"}, {"no": 8, "st": "Masa Kaynak Bölümü", "p": "Alçak Basınç Switchi", "m": "HA-0180", "k": "Open:0.05 MPa Close:0.15 MPa Renk: Siyah"}, {"no": 9, "st": "Masa Kaynak Bölümü", "p": "Alçak Basınç Switchi Konum", "m": "-", "k": "4 Yollu Boru Grubu"}, {"no": 10, "st": "Masa Kaynak Bölümü", "p": "Yüksek Basınç Switchi", "m": "HA-0182", "k": "Open:4.2 MPa Close:3.6 MPa Renk: Yeşil"}, {"no": 11, "st": "Masa Kaynak Bölümü", "p": "Yüksek Basınç Switchi Konum", "m": "-", "k": "3 Yollu Boru Grubu Sol Taraf"}, {"no": 12, "st": "Masa Kaynak Bölümü", "p": "Havşa Rekor Takımı", "m": "-", "k": "Var-Yok"}, {"no": 13, "st": "Masa Kaynak Bölümü", "p": "Kaynak Parametreleri/ BPS Uygunluğu", "m": "-", "k": "BPS"}, {"no": 14, "st": "Masa İzolasyon", "p": "İzolasyonda Açıklık/ Yapışmama", "m": "-", "k": "Var-Yok"}, {"no": 16, "st": "Masa İzolasyon", "p": "Kasa Çizik Kontrolü", "m": "-", "k": "Var-Yok"}, {"no": 17, "st": "Pano Montaj Bölümü", "p": "Klemens, Yüksük Bağlantı Kontrolü", "m": "-", "k": "Sağlam/ Sağlam Değil"}, {"no": 18, "st": "Pano Montaj Bölümü", "p": "Kart Kod Kontrolü", "m": "9RD138ZBA2J", "k": "Doğru/ Yanlış"}, {"no": 19, "st": "Montaj İstasyonu", "p": "Evaparatör Kod ve Yön Kontrolü", "m": "HA-0553", "k": "Doğru/ Yanlış VM-0MB1112008"}, {"no": 20, "st": "Montaj İstasyonu", "p": "Evaparatör Isıtıcı Yerleşim Kontrolü", "m": "-", "k": "Ezilme Var / Yok"}, {"no": 21, "st": "Montaj İstasyonu", "p": "Kompressör Kod Kontrolü", "m": "9RD138ZBA2J", "k": "Doğru/ Yanlış"}, {"no": 22, "st": "Montaj İstasyonu", "p": "Kasa çizik kontrolü", "m": "-", "k": "Var-Yok"}, {"no": 23, "st": "Montaj İstasyonu", "p": "Vida/Somun/Cıvata Gevşeklik Kontrolü", "m": "-", "k": "Matkap Tork Ayarı"}, {"no": 24, "st": "Montaj İstasyonu", "p": "Ekonomizer Yön Kontrolü", "m": "-", "k": "Doğru/ Yanlış"}, {"no": 25, "st": "Montaj İstasyonu", "p": "Eşanjör Yön Kontrolü", "m": "-", "k": "Doğru/ Yanlış"}, {"no": 26, "st": "Montaj İstasyonu", "p": "Kompresör Yön Kontrolü", "m": "-", "k": "Doğru/ Yanlış"}, {"no": 27, "st": "Kaynak İstasyonu", "p": "Bakır Boru Temizlik ve Lehim Kontrolü", "m": "-", "k": "Görsel Kontrol/ Temiz Olmalı"}, {"no": 28, "st": "Kaynak İstasyonu", "p": "Sirkülasyon Pompası Kod Kontrolü", "m": "Shimge: APM25-9-130, 8-13 kW", "k": "Doğru/ Yanlış"}, {"no": 29, "st": "Kaynak İstasyonu", "p": "Flow Switch Yön Kontrolü", "m": "-", "k": "Doğru/ Yanlış"}, {"no": 30, "st": "Kaçak Test İstasyonu", "p": "Azot Saat Kontrolü", "m": "-", "k": "25.5 Bar"}, {"no": 31, "st": "Kaçak Test İstasyonu", "p": "Azot Boşaltma", "m": "-", "k": "Evet/ Hayır"}, {"no": 32, "st": "Kaçak Test İstasyonu", "p": "Manometre Kontrol", "m": "-", "k": "0-0.5 Mpa"}, {"no": 33, "st": "Gaz Dolum İstasyonu", "p": "Gaz Şarj", "m": "R32", "k": "1300 gram"}, {"no": 34, "st": "Gaz Dolum İstasyonu", "p": "Manometre Kontrol", "m": "-", "k": "Sıcaklık P/T Tablosu"}, {"no": 35, "st": "Elektrik Montaj", "p": "Klemens, Yüksük Bağlantı Kontrolü", "m": "-", "k": "Gevşek Olmaması"}, {"no": 36, "st": "Elektrik Montaj", "p": "Pano Kartı Kod Kontrolü", "m": "W-WMK1120013", "k": "Doğru/ Yanlış"}, {"no": 37, "st": "Elektrik Montaj", "p": "Kompresör Bağlantı Kontrolü", "m": "-", "k": "U,V,W Doğru / Yanlış"}, {"no": 38, "st": "İzolasyon", "p": "Boru İzolasyonunda Açıklık/ Yapışmama", "m": "-", "k": "Açık Yer Kalmaması"}, {"no": 39, "st": "İzolasyon", "p": "Kompresör Kılıfı Yön, Açıklık Kontrolü", "m": "-", "k": "Açık Yer Kalmaması"}, {"no": 40, "st": "Isıtma-Soğutma Test İstasyonu", "p": "Matkap Tork Kontrolü", "m": "-", "k": "İş Tanım Kartı"}, {"no": 41, "st": "Isıtma-Soğutma Test İstasyonu", "p": "Isıtma Testi", "m": "-", "k": "Üretilen güç Uygun mu ?"}, {"no": 42, "st": "Isıtma-Soğutma Test İstasyonu", "p": "Soğutma Testi", "m": "-", "k": "Üretilen güç Uygun mu ?"}, {"no": 43, "st": "Isıtma-Soğutma Test İstasyonu", "p": "Kasa Çizik Kontrol", "m": "-", "k": "Çizik Var ise Montajlama"}, {"no": 44, "st": "Final Kontrol Test İstasyonu", "p": "Şema Elektrik Tesisat- Dikkat Sarı", "m": "-", "k": "Var-Yok"}, {"no": 45, "st": "Final Kontrol Test İstasyonu", "p": "Su Giriş- Çıkış-Güç Hattı-Yüksek Basınç", "m": "-", "k": "Var-Yok"}, {"no": 46, "st": "Final Kontrol Test İstasyonu", "p": "Hızlı Servis Çözümleri- QC Pass- Etiket Elektrik Sarı- Varmeks Şeffaf PP Kabartma", "m": "-", "k": "Var-Yok"}, {"no": 47, "st": "Final Kontrol Test İstasyonu", "p": "Manometre Kontrolü", "m": "-", "k": "Sıcaklık P/T Tablosu"}, {"no": 48, "st": "Final Kontrol Test İstasyonu", "p": "Kutu Etiket Kontrolü", "m": "-", "k": "Var-Yok"}, {"no": 49, "st": "Final Kontrol Test İstasyonu", "p": "Paketleme Kontrolü", "m": "-", "k": "Doğru/ Yanlış"}]}, "13kW": {"label": "VARM UP 13 kW", "doc": "FR-063-1", "model": "VM-1MB1112013", "items": [{"no": 1, "st": "Masa Kaynak Bölümü", "p": "EEV Yön Kontrolü", "m": "-", "k": "Teknik Resim/Görsel Kontrol"}, {"no": 2, "st": "Masa Kaynak Bölümü", "p": "Ana EEV Kodu", "m": "HA-0492", "k": "P118C-11"}, {"no": 3, "st": "Masa Kaynak Bölümü", "p": "Ekonomizer Kod Kontrolü", "m": "Hrale, B3-10R-18-4.5", "k": "Doğru/ Yanlış"}, {"no": 4, "st": "Masa Kaynak Bölümü", "p": "Eşanjör Kod Kontrolü", "m": "Hrale, B3-40RD-46-4.5", "k": "Doğru/ Yanlış"}, {"no": 5, "st": "Masa Kaynak Bölümü", "p": "Ekonomizer-Ana EEV Konum", "m": "-", "k": "F4"}, {"no": 6, "st": "Masa Kaynak Bölümü", "p": "Yardımcı EEV Kodu", "m": "HA-0669", "k": "P113C-03"}, {"no": 7, "st": "Masa Kaynak Bölümü", "p": "Ekonomizer- Yardımcı EEV Konumu", "m": "-", "k": "F3"}, {"no": 8, "st": "Masa Kaynak Bölümü", "p": "Alçak Basınç Switchi", "m": "HA-0180", "k": "Open:0.05 MPa Close:0.15 MPa Renk: Siyah"}, {"no": 9, "st": "Masa Kaynak Bölümü", "p": "Alçak Basınç Switchi Konum", "m": "-", "k": "4 Yollu Boru Grubu"}, {"no": 10, "st": "Masa Kaynak Bölümü", "p": "Yüksek Basınç Switchi", "m": "HA-0182", "k": "Open:4.2 MPa Close:3.6 MPa Renk: Yeşil"}, {"no": 11, "st": "Masa Kaynak Bölümü", "p": "Yüksek Basınç Switchi Konum", "m": "-", "k": "3 Yollu Boru Grubu Sağ Taraf"}, {"no": 12, "st": "Masa Kaynak Bölümü", "p": "Havşa Rekor Takımı", "m": "-", "k": "Var-Yok"}, {"no": 13, "st": "Masa Kaynak Bölümü", "p": "Kaynak Parametreleri/ BPS Uygunluğu", "m": "-", "k": "BPS"}, {"no": 14, "st": "Masa İzolasyon", "p": "İzolasyonda Açıklık/ Yapışmama", "m": "-", "k": "Var-Yok"}, {"no": 16, "st": "Masa İzolasyon", "p": "Kasa Çizik Kontrolü", "m": "-", "k": "Var-Yok"}, {"no": 17, "st": "Pano Montaj Bölümü", "p": "Klemens, Yüksük Bağlantı Kontrolü", "m": "-", "k": "Sağlam/ Sağlam Değil"}, {"no": 18, "st": "Pano Montaj Bölümü", "p": "Kart Kod Kontrolü", "m": "9RD220ZAA2J", "k": "Doğru/ Yanlış"}, {"no": 19, "st": "Montaj İstasyonu", "p": "Evaparatör Kod ve Yön Kontrolü", "m": "HA-0502", "k": "Doğru/ Yanlış VM-0MB1112013"}, {"no": 20, "st": "Montaj İstasyonu", "p": "Evaparatör Isıtıcı Yerleşim Kontrolü", "m": "-", "k": "Ezilme Var / Yok"}, {"no": 21, "st": "Montaj İstasyonu", "p": "Kompressör Kod Kontrolü", "m": "9RD220ZAA2J", "k": "Doğru/ Yanlış"}, {"no": 22, "st": "Montaj İstasyonu", "p": "Kasa çizik kontrolü", "m": "-", "k": "Var-Yok"}, {"no": 23, "st": "Montaj İstasyonu", "p": "Vida/Somun/Cıvata Gevşeklik Kontrolü", "m": "-", "k": "Matkap Tork Ayarı"}, {"no": 24, "st": "Montaj İstasyonu", "p": "Ekonomizer Yön Kontrolü", "m": "-", "k": "Doğru/ Yanlış"}, {"no": 25, "st": "Montaj İstasyonu", "p": "Eşanjör Yön Kontrolü", "m": "-", "k": "Doğru/ Yanlış"}, {"no": 26, "st": "Montaj İstasyonu", "p": "Kompresör Yön Kontrolü", "m": "-", "k": "Doğru/ Yanlış"}, {"no": 27, "st": "Kaynak İstasyonu", "p": "Bakır Boru Temizlik ve Lehim Kontrolü", "m": "-", "k": "Görsel Kontrol/ Temiz Olmalı"}, {"no": 28, "st": "Kaynak İstasyonu", "p": "Sirkülasyon Pompası Kod Kontrolü", "m": "Shimge: APM25-9-130, 8-13 Kw", "k": "Doğru/ Yanlış"}, {"no": 29, "st": "Kaynak İstasyonu", "p": "Flow Switch Yön Kontrolü", "m": "-", "k": "Doğru/ Yanlış"}, {"no": 30, "st": "Kaçak Test İstasyonu", "p": "Azot Saat Kontrolü", "m": "-", "k": "25.5 Bar"}, {"no": 31, "st": "Kaçak Test İstasyonu", "p": "Azot Boşaltma", "m": "-", "k": "Evet/ Hayır"}, {"no": 32, "st": "Kaçak Test İstasyonu", "p": "Manometre Kontrol", "m": "-", "k": "0-0.5 Mpa"}, {"no": 33, "st": "Gaz Dolum İstasyonu", "p": "Gaz Şarj", "m": "R32", "k": "1600 gram"}, {"no": 34, "st": "Gaz Dolum İstasyonu", "p": "Manometre Kontrol", "m": "-", "k": "Sıcaklık P/T Tablosu"}, {"no": 35, "st": "Elektrik Montaj", "p": "Klemens, Yüksük Bağlantı Kontrolü", "m": "-", "k": "Gevşek Olmaması"}, {"no": 36, "st": "Elektrik Montaj", "p": "Pano Kartı Kod Kontrolü", "m": "W-WMK1120011", "k": "Doğru/ Yanlış"}, {"no": 37, "st": "Elektrik Montaj", "p": "Kompresör Bağlantı Kontrolü", "m": "-", "k": "U,V,W Doğru / Yanlış"}, {"no": 38, "st": "İzolasyon", "p": "Boru İzolasyonunda Açıklık/ Yapışmama", "m": "-", "k": "Açık Yer Kalmaması"}, {"no": 39, "st": "İzolasyon", "p": "Kompresör Kılıfı Yön, Açıklık Kontrolü", "m": "-", "k": "Açık Yer Kalmaması"}, {"no": 40, "st": "Isıtma-Soğutma Test İstasyonu", "p": "Matkap Tork Kontrolü", "m": "-", "k": "İş Tanım Kartı"}, {"no": 41, "st": "Isıtma-Soğutma Test İstasyonu", "p": "Isıtma Testi", "m": "-", "k": "Üretilen güç Uygun mu ?"}, {"no": 42, "st": "Isıtma-Soğutma Test İstasyonu", "p": "Soğutma Testi", "m": "-", "k": "Üretilen güç Uygun mu ?"}, {"no": 43, "st": "Isıtma-Soğutma Test İstasyonu", "p": "Kasa Çizik Kontrol", "m": "-", "k": "Çizik Var ise Montajlama"}, {"no": 44, "st": "Final Kontrol Test İstasyonu", "p": "Şema Elektrik Tesisat- Dikkat Sarı", "m": "-", "k": "Var-Yok"}, {"no": 45, "st": "Final Kontrol Test İstasyonu", "p": "Su Giriş- Çıkış-Güç Hattı-Yüksek Basınç", "m": "-", "k": "Var-Yok"}, {"no": 46, "st": "Final Kontrol Test İstasyonu", "p": "Hızlı Servis Çözümleri- QC Pass- Etiket Elektrik Sarı- Varmeks Şeffaf PP Kabartma", "m": "-", "k": "Var-Yok"}, {"no": 47, "st": "Final Kontrol Test İstasyonu", "p": "Manometre Kontrolü", "m": "-", "k": "Sıcaklık P/T Tablosu"}, {"no": 48, "st": "Final Kontrol Test İstasyonu", "p": "Kutu Etiket Kontrolü", "m": "-", "k": "Var-Yok"}, {"no": 49, "st": "Final Kontrol Test İstasyonu", "p": "Paketleme Kontrolü", "m": "-", "k": "Doğru/ Yanlış"}]}, "16kW": {"label": "VARM UP 16 kW", "doc": "FR-063", "model": "VM-1MB1112016", "items": [{"no": 1, "st": "Masa Kaynak Bölümü", "p": "EEV Yön Kontrolü", "m": "-", "k": "Teknik Resim/Görsel Kontrol"}, {"no": 2, "st": "Masa Kaynak Bölümü", "p": "Ana EEV Kodu", "m": "HA-0492", "k": "P118C11"}, {"no": 3, "st": "Masa Kaynak Bölümü", "p": "Ekonomizer Kod Kontrolü", "m": "Hrale, B3-10R-18-4.5", "k": "Doğru/ Yanlış"}, {"no": 4, "st": "Masa Kaynak Bölümü", "p": "Eşanjör Kod Kontrolü", "m": "Hrale, B3-40RD-56-4.5", "k": "Doğru/ Yanlış"}, {"no": 5, "st": "Masa Kaynak Bölümü", "p": "Ekonomizer-Ana EEV Konum", "m": "-", "k": "F4"}, {"no": 6, "st": "Masa Kaynak Bölümü", "p": "Yardımcı EEV Kodu", "m": "HA-0653", "k": "P113C22"}, {"no": 7, "st": "Masa Kaynak Bölümü", "p": "Ekonomizer- Yardımcı EEV Konumu", "m": "-", "k": "F3"}, {"no": 8, "st": "Masa Kaynak Bölümü", "p": "Alçak Basınç Switchi", "m": "HA-0180", "k": "Open:0.05 MPa Close:0.15 MPa Renk: Siyah"}, {"no": 9, "st": "Masa Kaynak Bölümü", "p": "Alçak Basınç Switchi Konum", "m": "-", "k": "4 Yollu Boru Grubu"}, {"no": 10, "st": "Masa Kaynak Bölümü", "p": "Yüksek Basınç Switchi", "m": "HA-0182", "k": "Open:4.2 MPa Close:3.6 MPa Renk: Yeşil"}, {"no": 11, "st": "Masa Kaynak Bölümü", "p": "Yüksek Basınç Switchi Konum", "m": "-", "k": "3 Yollu Boru Grubu Sol Taraf"}, {"no": 12, "st": "Masa Kaynak Bölümü", "p": "Havşa Rekor Takımı", "m": "-", "k": "Var-Yok"}, {"no": 13, "st": "Masa Kaynak Bölümü", "p": "Kaynak Parametreleri/ BPS Uygunluğu", "m": "-", "k": "BPS"}, {"no": 14, "st": "Masa İzolasyon", "p": "İzolasyonda Açıklık/ Yapışmama", "m": "-", "k": "Var-Yok"}, {"no": 16, "st": "Masa İzolasyon", "p": "Kasa Çizik Kontrolü", "m": "-", "k": "Var-Yok"}, {"no": 17, "st": "Pano Montaj Bölümü", "p": "Klemens, Yüksük Bağlantı Kontrolü", "m": "-", "k": "Sağlam/ Sağlam Değil"}, {"no": 18, "st": "Pano Montaj Bölümü", "p": "Kart Kod Kontrolü", "m": "9KD420ZAA2J", "k": "Doğru/ Yanlış"}, {"no": 19, "st": "Montaj İstasyonu", "p": "Evaparatör Kod ve Yön Kontrolü", "m": "HA-0635", "k": "Doğru/ Yanlış VM-0MB1112016"}, {"no": 20, "st": "Montaj İstasyonu", "p": "Evaparatör Isıtıcı Yerleşim Kontrolü", "m": "-", "k": "Ezilme Var / Yok"}, {"no": 21, "st": "Montaj İstasyonu", "p": "Kompressör Kod Kontrolü", "m": "9KD420ZAA2J", "k": "Doğru/ Yanlış"}, {"no": 22, "st": "Montaj İstasyonu", "p": "Kasa çizik kontrolü", "m": "-", "k": "Var-Yok"}, {"no": 23, "st": "Montaj İstasyonu", "p": "Vida/Somun/Cıvata Gevşeklik Kontrolü", "m": "-", "k": "Matkap Tork Ayarı"}, {"no": 24, "st": "Montaj İstasyonu", "p": "Ekonomizer Yön Kontrolü", "m": "-", "k": "Doğru/ Yanlış"}, {"no": 25, "st": "Montaj İstasyonu", "p": "Eşanjör Yön Kontrolü", "m": "-", "k": "Doğru/ Yanlış"}, {"no": 26, "st": "Montaj İstasyonu", "p": "Kompresör Yön Kontrolü", "m": "-", "k": "Doğru/ Yanlış"}, {"no": 27, "st": "Kaynak İstasyonu", "p": "Bakır Boru Temizlik ve Lehim Kontrolü", "m": "-", "k": "Görsel Kontrol/ Temiz Olmalı"}, {"no": 28, "st": "Kaynak İstasyonu", "p": "Sirkülasyon Pompası Kod Kontrolü", "m": "Shimge: APF25-12-130, 16-18 kW", "k": "Doğru/ Yanlış"}, {"no": 29, "st": "Kaynak İstasyonu", "p": "Flow Switch Yön Kontrolü", "m": "-", "k": "Doğru/ Yanlış"}, {"no": 30, "st": "Kaçak Test İstasyonu", "p": "Azot Saat Kontrolü", "m": "-", "k": "25.5 Bar"}, {"no": 31, "st": "Kaçak Test İstasyonu", "p": "Azot Boşaltma", "m": "-", "k": "Evet/ Hayır"}, {"no": 32, "st": "Kaçak Test İstasyonu", "p": "Manometre Kontrol", "m": "-", "k": "0-0.5 Mpa"}, {"no": 33, "st": "Gaz Dolum İstasyonu", "p": "Gaz Şarj", "m": "R32", "k": "1800 gram"}, {"no": 34, "st": "Gaz Dolum İstasyonu", "p": "Manometre Kontrol", "m": "-", "k": "Sıcaklık P/T Tablosu"}, {"no": 35, "st": "Elektrik Montaj", "p": "Klemens, Yüksük Bağlantı Kontrolü", "m": "-", "k": "Gevşek Olmaması"}, {"no": 36, "st": "Elektrik Montaj", "p": "Pano Kartı Kod Kontrolü", "m": "W-WMK1120014", "k": "Doğru/ Yanlış"}, {"no": 37, "st": "Elektrik Montaj", "p": "Kompresör Bağlantı Kontrolü", "m": "-", "k": "U,V,W Doğru / Yanlış"}, {"no": 38, "st": "İzolasyon", "p": "Boru İzolasyonunda Açıklık/ Yapışmama", "m": "-", "k": "Açık Yer Kalmaması"}, {"no": 39, "st": "İzolasyon", "p": "Kompresör Kılıfı Yön, Açıklık Kontrolü", "m": "-", "k": "Açık Yer Kalmaması"}, {"no": 40, "st": "Isıtma-Soğutma Test İstasyonu", "p": "Matkap Tork Kontrolü", "m": "-", "k": "İş Tanım Kartı"}, {"no": 41, "st": "Isıtma-Soğutma Test İstasyonu", "p": "Isıtma Testi", "m": "-", "k": "Üretilen güç Uygun mu ?"}, {"no": 42, "st": "Isıtma-Soğutma Test İstasyonu", "p": "Soğutma Testi", "m": "-", "k": "Üretilen güç Uygun mu ?"}, {"no": 43, "st": "Isıtma-Soğutma Test İstasyonu", "p": "Kasa Çizik Kontrol", "m": "-", "k": "Çizik Var ise Montajlama"}, {"no": 44, "st": "Final Kontrol Test İstasyonu", "p": "Şema Elektrik Tesisat- Dikkat Sarı", "m": "-", "k": "Var-Yok"}, {"no": 45, "st": "Final Kontrol Test İstasyonu", "p": "Su Giriş- Çıkış-Güç Hattı-Yüksek Basınç", "m": "-", "k": "Var-Yok"}, {"no": 46, "st": "Final Kontrol Test İstasyonu", "p": "Hızlı Servis Çözümleri- QC Pass- Etiket Elektrik Sarı- Varmeks Şeffaf PP Kabartma", "m": "-", "k": "Var-Yok"}, {"no": 47, "st": "Final Kontrol Test İstasyonu", "p": "Manometre Kontrolü", "m": "-", "k": "Sıcaklık P/T Tablosu"}, {"no": 48, "st": "Final Kontrol Test İstasyonu", "p": "Kutu Etiket Kontrolü", "m": "-", "k": "Var-Yok"}, {"no": 49, "st": "Final Kontrol Test İstasyonu", "p": "Paketleme Kontrolü", "m": "-", "k": "Doğru/ Yanlış"}]}, "18kW": {"label": "VARM UP 18 kW", "doc": "FR-063-3", "model": "VM-1MB1112018", "items": [{"no": 1, "st": "Masa Kaynak Bölümü", "p": "EEV Yön Kontrolü", "m": "-", "k": "Teknik Resim/Görsel Kontrol"}, {"no": 2, "st": "Masa Kaynak Bölümü", "p": "Ana EEV Kodu", "m": "HA-0021", "k": "P122C-05"}, {"no": 3, "st": "Masa Kaynak Bölümü", "p": "Ekonomizer Kod Kontrolü", "m": "Hrale, B3-10R-18-4.5", "k": "Doğru/ Yanlış"}, {"no": 4, "st": "Masa Kaynak Bölümü", "p": "Eşanjör Kod Kontrolü", "m": "Hrale, B3-40RD-56-4.5", "k": "Doğru/ Yanlış"}, {"no": 5, "st": "Masa Kaynak Bölümü", "p": "Ekonomizer-Ana EEV Konum", "m": "-", "k": "F3"}, {"no": 6, "st": "Masa Kaynak Bölümü", "p": "Yardımcı EEV Kodu", "m": "HA-0020", "k": "P1165C-15"}, {"no": 7, "st": "Masa Kaynak Bölümü", "p": "Ekonomizer- Yardımcı EEV Konumu", "m": "-", "k": "F4"}, {"no": 8, "st": "Masa Kaynak Bölümü", "p": "Alçak Basınç Switchi", "m": "HA-0180", "k": "Open:0.05 MPa Close:0.15 MPa Renk: Siyah"}, {"no": 9, "st": "Masa Kaynak Bölümü", "p": "Alçak Basınç Switchi Konum", "m": "-", "k": "4 Yollu Boru Grubu"}, {"no": 10, "st": "Masa Kaynak Bölümü", "p": "Yüksek Basınç Switchi", "m": "HA-0182", "k": "Open:4.2 MPa Close:3.6 MPa Renk: Yeşil"}, {"no": 11, "st": "Masa Kaynak Bölümü", "p": "Yüksek Basınç Switchi Konum", "m": "-", "k": "3 Yollu Boru Grubu Sol Taraf"}, {"no": 12, "st": "Masa Kaynak Bölümü", "p": "Havşa Rekor Takımı", "m": "-", "k": "Var-Yok"}, {"no": 13, "st": "Masa Kaynak Bölümü", "p": "Kaynak Parametreleri/ BPS Uygunluğu", "m": "-", "k": "BPS"}, {"no": 14, "st": "Masa İzolasyon", "p": "İzolasyonda Açıklık/ Yapışmama", "m": "-", "k": "Var-Yok"}, {"no": 16, "st": "Masa İzolasyon", "p": "Kasa Çizik Kontrolü", "m": "-", "k": "Var-Yok"}, {"no": 17, "st": "Pano Montaj Bölümü", "p": "Klemens, Yüksük Bağlantı Kontrolü", "m": "-", "k": "Sağlam/ Sağlam Değil"}, {"no": 18, "st": "Pano Montaj Bölümü", "p": "Kart Kod Kontrolü", "m": "9VD420ZAA2J", "k": "Doğru/ Yanlış"}, {"no": 19, "st": "Montaj İstasyonu", "p": "Evaparatör Kod ve Yön Kontrolü", "m": "HA-0533", "k": "Doğru/ Yanlış VM-0MB1112018"}, {"no": 20, "st": "Montaj İstasyonu", "p": "Evaparatör Isıtıcı Yerleşim Kontrolü", "m": "-", "k": "Ezilme Var / Yok"}, {"no": 21, "st": "Montaj İstasyonu", "p": "Kompressör Kod Kontrolü", "m": "9VD420ZAA2J", "k": "Doğru/ Yanlış"}, {"no": 22, "st": "Montaj İstasyonu", "p": "Kasa çizik kontrolü", "m": "-", "k": "Var-Yok"}, {"no": 23, "st": "Montaj İstasyonu", "p": "Vida/Somun/Cıvata Gevşeklik Kontrolü", "m": "-", "k": "Matkap Tork Ayarı"}, {"no": 24, "st": "Montaj İstasyonu", "p": "Ekonomizer Yön Kontrolü", "m": "-", "k": "Doğru/ Yanlış"}, {"no": 25, "st": "Montaj İstasyonu", "p": "Eşanjör Yön Kontrolü", "m": "-", "k": "Doğru/ Yanlış"}, {"no": 26, "st": "Montaj İstasyonu", "p": "Kompresör Yön Kontrolü", "m": "-", "k": "Doğru/ Yanlış"}, {"no": 27, "st": "Kaynak İstasyonu", "p": "Bakır Boru Temizlik ve Lehim Kontrolü", "m": "-", "k": "Görsel Kontrol/ Temiz Olmalı"}, {"no": 28, "st": "Kaynak İstasyonu", "p": "Sirkülasyon Pompası Kod Kontrolü", "m": "Shimge: APF25-12-130, 16-18 kW", "k": "Doğru/ Yanlış"}, {"no": 29, "st": "Kaynak İstasyonu", "p": "Flow Switch Yön Kontrolü", "m": "-", "k": "Doğru/ Yanlış"}, {"no": 30, "st": "Kaçak Test İstasyonu", "p": "Azot Saat Kontrolü", "m": "-", "k": "25.5 Bar"}, {"no": 31, "st": "Kaçak Test İstasyonu", "p": "Azot Boşaltma", "m": "-", "k": "Evet/ Hayır"}, {"no": 32, "st": "Kaçak Test İstasyonu", "p": "Manometre Kontrol", "m": "-", "k": "0-0.5 Mpa"}, {"no": 33, "st": "Gaz Dolum İstasyonu", "p": "Gaz Şarj", "m": "R32", "k": "2700 gram"}, {"no": 34, "st": "Gaz Dolum İstasyonu", "p": "Manometre Kontrol", "m": "-", "k": "Sıcaklık P/T Tablosu"}, {"no": 35, "st": "Elektrik Montaj", "p": "Klemens, Yüksük Bağlantı Kontrolü", "m": "-", "k": "Gevşek Olmaması"}, {"no": 36, "st": "Elektrik Montaj", "p": "Pano Kartı Kod Kontrolü", "m": "W-WMK1120015", "k": "Doğru/ Yanlış"}, {"no": 37, "st": "Elektrik Montaj", "p": "Kompresör Bağlantı Kontrolü", "m": "-", "k": "U,V,W Doğru / Yanlış"}, {"no": 38, "st": "İzolasyon", "p": "Boru İzolasyonunda Açıklık/ Yapışmama", "m": "-", "k": "Açık Yer Kalmaması"}, {"no": 39, "st": "İzolasyon", "p": "Kompresör Kılıfı Yön, Açıklık Kontrolü", "m": "-", "k": "Açık Yer Kalmaması"}, {"no": 40, "st": "Isıtma-Soğutma Test İstasyonu", "p": "Matkap Tork Kontrolü", "m": "-", "k": "İş Tanım Kartı"}, {"no": 41, "st": "Isıtma-Soğutma Test İstasyonu", "p": "Isıtma Testi", "m": "-", "k": "Üretilen güç Uygun mu ?"}, {"no": 42, "st": "Isıtma-Soğutma Test İstasyonu", "p": "Soğutma Testi", "m": "-", "k": "Üretilen güç Uygun mu ?"}, {"no": 43, "st": "Isıtma-Soğutma Test İstasyonu", "p": "Kasa Çizik Kontrol", "m": "-", "k": "Çizik Var ise Montajlama"}, {"no": 44, "st": "Final Kontrol Test İstasyonu", "p": "Şema Elektrik Tesisat- Dikkat Sarı", "m": "-", "k": "Var-Yok"}, {"no": 45, "st": "Final Kontrol Test İstasyonu", "p": "Su Giriş- Çıkış-Güç Hattı-Yüksek Basınç", "m": "-", "k": "Var-Yok"}, {"no": 46, "st": "Final Kontrol Test İstasyonu", "p": "Hızlı Servis Çözümleri- QC Pass- Etiket Elektrik Sarı- Varmeks Şeffaf PP Kabartma", "m": "-", "k": "Var-Yok"}, {"no": 47, "st": "Final Kontrol Test İstasyonu", "p": "Manometre Kontrolü", "m": "-", "k": "Sıcaklık P/T Tablosu"}, {"no": 48, "st": "Final Kontrol Test İstasyonu", "p": "Kutu Etiket Kontrolü", "m": "-", "k": "Var-Yok"}, {"no": 49, "st": "Final Kontrol Test İstasyonu", "p": "Paketleme Kontrolü", "m": "-", "k": "Doğru/ Yanlış"}]}};
+var CHK_STATIONS = ["Masa Kaynak Bölümü", "Masa İzolasyon", "Pano Montaj Bölümü", "Montaj İstasyonu", "Kaynak İstasyonu", "Kaçak Test İstasyonu", "Gaz Dolum İstasyonu", "Elektrik Montaj", "İzolasyon", "Isıtma-Soğutma Test İstasyonu", "Final Kontrol Test İstasyonu"];
+var CHK_EVENT_TYPES = ["Fire/Iskarta", "Cihaz Açılma", "Parça Değişimi", "Çizik", "Etiket Düzen", "Onarım"];
+</script>
+<script>
+(function () {
+"use strict";
+window.addEventListener("error", function (e) { var b = document.getElementById("boot-err"); if (b) { b.style.display = "block"; b.textContent = "Hata: " + (e.message || e); } });
+
+/* ---------------- sınıflandırma ---------------- */
+var CAT = { KOD: "Kod doğrulama", KONUM: "Konum / yön", GORSEL: "Görsel", BAGLANTI: "Bağlantı / tork", PROSES: "Proses", OLCUM: "Ölçüm", TEST: "Fonksiyon testi", ETIKET: "Etiket / ambalaj" };
+var CRIT = { K: "Kritik", M: "Majör", m: "Minör" };
+var CLS = {1:["KONUM","M"],2:["KOD","K"],3:["KOD","M"],4:["KOD","K"],5:["KONUM","M"],6:["KOD","M"],7:["KONUM","M"],8:["KOD","K"],9:["KONUM","K"],10:["KOD","K"],11:["KONUM","K"],12:["GORSEL","M"],13:["PROSES","K"],14:["GORSEL","m"],16:["GORSEL","m"],17:["BAGLANTI","K"],18:["KOD","K"],19:["KOD","M"],20:["GORSEL","M"],21:["KOD","K"],22:["GORSEL","m"],23:["BAGLANTI","M"],24:["KONUM","M"],25:["KONUM","M"],26:["KONUM","M"],27:["PROSES","K"],28:["KOD","M"],29:["KONUM","K"],30:["OLCUM","K"],31:["PROSES","M"],32:["OLCUM","K"],33:["OLCUM","K"],34:["OLCUM","M"],35:["BAGLANTI","K"],36:["KOD","K"],37:["BAGLANTI","K"],38:["GORSEL","M"],39:["GORSEL","m"],40:["BAGLANTI","M"],41:["TEST","K"],42:["TEST","K"],43:["GORSEL","m"],44:["ETIKET","M"],45:["ETIKET","M"],46:["ETIKET","m"],47:["OLCUM","M"],48:["ETIKET","M"],49:["ETIKET","m"]};
+var FLAG = {"18":"Mamul kodu kompresör koduyla aynı","19":"Model kodu VM-0MB / VM-1MB","16":"Mükerrer (3 istasyon)","22":"Mükerrer (3 istasyon)","43":"Mükerrer (3 istasyon)","17":"Mükerrer (2 istasyon)","35":"Mükerrer (2 istasyon)","32":"Ölçüm türü belirsiz","23":"Nm değeri yok","40":"Nm değeri yok, yanlış istasyon","30":"Süre/düşüş limiti yok","33":"Tolerans yok","41":"Ölçüm kaydı yok","42":"Ölçüm kaydı yok"};
+var REC = [
+  {no:"Ö1",st:"Gaz Dolum İstasyonu",p:"Vakum seviyesi ve bekleme testi",m:"-",k:"Spesifikasyona göre hedef vakum ve izin verilen basınç yükselmesi",cat:"OLCUM",crit:"K"},
+  {no:"Ö2",st:"Gaz Dolum İstasyonu",p:"Şarj sonrası kaçak kontrolü (elektronik dedektör)",m:"-",k:"Kaçak yok",cat:"TEST",crit:"K"},
+  {no:"Ö3",st:"Montaj İstasyonu",p:"Bağlantı torku (Nm) doğrulaması",m:"-",k:"İş talimatındaki Nm değeri",cat:"BAGLANTI",crit:"M"},
+  {no:"Ö4",st:"Isıtma-Soğutma Test İstasyonu",p:"Çalışma akımı ve basınç değerleri kaydı",m:"-",k:"Model kabul sınırları içinde",cat:"OLCUM",crit:"M"},
+  {no:"Ö5",st:"Final Kontrol Test İstasyonu",p:"Koruma iletkeni (topraklama) sürekliliği",m:"-",k:"Spesifikasyondaki direnç sınırı",cat:"TEST",crit:"K"},
+  {no:"Ö6",st:"Final Kontrol Test İstasyonu",p:"Dielektrik dayanım (hi-pot) testi",m:"-",k:"Delinme / atlama yok",cat:"TEST",crit:"K"},
+  {no:"Ö7",st:"Final Kontrol Test İstasyonu",p:"Yalıtım direnci",m:"-",k:"Spesifikasyondaki alt sınır",cat:"OLCUM",crit:"K"},
+  {no:"Ö8",st:"Final Kontrol Test İstasyonu",p:"Seri no, etiket ve iş emri eşleşmesi",m:"-",k:"Eşleşiyor",cat:"ETIKET",crit:"M"}
+];
+var MEAS = {"30":{u:"bar"},"32":{u:"MPa"},"33":{u:"g",kind:"gas"},"34":{u:"bar"},"41":{u:"kW",kind:"heat"},"42":{u:"kW",kind:"cool"},"47":{u:"bar"},"Ö1":{u:"mbar"},"Ö4":{u:"A"},"Ö5":{u:"Ω"},"Ö7":{u:"MΩ"}};
+var NOM = {"8kW":8,"13kW":13,"16kW":16,"18kW":18};
+var SHORT = {"Masa Kaynak Bölümü":"Masa kaynak","Masa İzolasyon":"Masa izol.","Pano Montaj Bölümü":"Pano","Montaj İstasyonu":"Montaj","Kaynak İstasyonu":"Kaynak","Kaçak Test İstasyonu":"Kaçak test","Gaz Dolum İstasyonu":"Gaz dolum","Elektrik Montaj":"Elektrik","İzolasyon":"İzolasyon","Isıtma-Soğutma Test İstasyonu":"Perf. test","Final Kontrol Test İstasyonu":"Final"};
+var STL = {ok:"tamam",nok:"uygunsuzluk",hold:"kritik uygunsuzluk",part:"kısmen",todo:"başlanmadı",none:"madde yok"};
+var STATUS = {ok:"Sevke hazır",nok:"Uygunsuzluk var",hold:"Bekletme: kritik",run:"Kontrol sürüyor"};
+
+var ISSUES = [
+  {no:"15",t:"Numaralandırma boşluğu",d:"15 numaralı madde yok; liste 1–49 arası 48 madde içeriyor. Revizyonda numaralandırma düzeltilmeli."},
+  {no:"18",t:"Olası veri hatası",d:"\"Kart kod kontrolü\" maddesinin mamul kodu, 21. maddedeki kompresör koduyla dört cihazda da aynı. Pano kartı kodu 36. maddede ayrıca verilmiş; 18. maddenin hangi kartı kastettiği ve doğru kodu teyit edilmeli."},
+  {no:"19",t:"Model kodu tutarsızlığı",d:"Kriterde VM-0MB… geçiyor, form başlığındaki model VM-1MB…. Bu bir alt montaj kodu ise bu açıkça yazılmalı; değilse düzeltilmeli."},
+  {no:"2, 6",t:"Kod yazım formatı",d:"Aynı parça ailesinde P118C11 / P118C-11 ve P113C22 / P113C-03 gibi farklı yazımlar var; 18 kW yardımcı EEV kodu P1165C-15 ayrıca teyit edilmeli. Barkodla doğrulamaya geçilecekse yazım birebir olmalı."},
+  {no:"5, 7, 11",t:"Modeller arası ters konum",d:"18 kW'da ekonomizer–EEV konumları (F3/F4) diğer modellere göre ters; 13 kW'da yüksek basınç switchi sağ tarafta, diğerlerinde sol. Doğru olabilir, ancak aynı hatta model karışıklığı riski yüksek: görsel iş talimatı veya poka-yoke ile desteklenmeli."},
+  {no:"16, 22, 43",t:"Mükerrer kontrol",d:"Kasa çizik kontrolü üç istasyonda tekrar ediyor. Ara kontrollerin amacı hatanın oluştuğu yeri yakalamaksa bu yazılmalı; değilse son kontrolde tek noktaya indirilebilir."},
+  {no:"17, 35",t:"Mükerrer kontrol",d:"Klemens/yüksük bağlantısı iki istasyonda, iki farklı kriterle (\"sağlam\" ve \"gevşek olmaması\"). Tek ve ölçülebilir bir kritere (ör. çekme testi veya tork) bağlanabilir."},
+  {no:"32, 34, 47",t:"Belirsiz ölçüm",d:"Üç manometre kontrolü var. 32. madde 0–0,5 MPa (vakum mu, düşük basınç mı belli değil); 34 ve 47 sıcaklık P/T tablosuna atıf yapıyor ama ölçülen değer kaydedilmiyor."},
+  {no:"23, 40",t:"Ölçülemeyen tork",d:"Kriter \"Matkap tork ayarı / İş tanım kartı\"; Nm değeri yok. 40. madde performans test istasyonunda yer alıyor ama montaj kontrolü niteliğinde."},
+  {no:"30",t:"Sızdırmazlık kriteri eksik",d:"25,5 bar azot basıncı verilmiş; bekleme süresi ve izin verilen basınç düşüşü tanımlı değil."},
+  {no:"33",t:"Tolerans yok",d:"Gaz şarj miktarı hedef gram olarak verilmiş (1300 / 1600 / 1800 / 2700 g); tolerans ve ölçülen değerin kaydı yok."},
+  {no:"41, 42",t:"Test sonucu kaydedilmiyor",d:"\"Üretilen güç uygun mu?\" evet/hayır sorusu; ölçülen kapasite, akım, basınç ve su sıcaklıkları ile bir kabul sınırı yok."}
+];
+var BENCH = [
+  ["Kriter yapısı","Maddelerin çoğu Var/Yok, Doğru/Yanlış tipinde nitel kriter.","Kontrol planı yaklaşımı (AIAG APQP): her karakteristik için spesifikasyon, tolerans, ölçüm yöntemi, sıklık ve reaksiyon planı.","Ölçüm maddelerine değer ve tolerans alanı eklendi; uygunsuzluk kaydı (NCR) reaksiyon planına bağlandı."],
+  ["Kritiklik","Bütün maddeler eşit ağırlıkta.","PFMEA ile belirlenen güvenlik ve fonksiyon karakteristikleri ayrı işaretlenir; kritik uygunsuzlukta ürün bekletilir.","Maddeler Kritik / Majör / Minör olarak sınıflandı; kritik uygunsuzluk kartı otomatik olarak bekletmeye alır."],
+  ["Sızdırmazlık testi","Azot 25,5 bar; süre ve düşüş limiti yok.","EN 378-2 kapsamında dayanım ve sızdırmazlık testi; seri üretimde bekleme süresi ve basınç düşüş limiti tanımlı test, şarj sonrası dedektör veya helyum ile kaçak kontrolü.","Bekleme süresi ve düşüş limiti tanımlanmalı. Şarj sonrası kaçak kontrolü önerilen madde olarak eklendi."],
+  ["Vakum","Ayrı bir vakum seviyesi ve bekleme kontrolü yok; 32. madde belirsiz.","Şarj öncesi hedef vakum seviyesi ve basınç yükselme (bekleme) testi yaygın iyi uygulamadır.","Önerilen madde: vakum seviyesi ve bekleme testi."],
+  ["Gaz şarj","Hedef gram var, tolerans ve kayıt yok.","Terazili veya otomatik şarj, model bazlı tolerans ve seri numarasıyla şarj kaydı.","Ölçülen gram kaydediliyor ve ayarlanabilir toleransa göre değerlendiriliyor."],
+  ["Elektriksel güvenlik","Rutin elektriksel güvenlik testi yok.","IEC/EN 60335-1 ve ısı pompaları için IEC/EN 60335-2-40 kapsamında üretim hattı rutin testleri: koruma iletkeni sürekliliği ve dielektrik dayanım; yaygın olarak yalıtım direnci ve kaçak akım.","Önerilen maddeler: topraklama sürekliliği, dielektrik dayanım, yalıtım direnci."],
+  ["Performans testi","\"Üretilen güç uygun mu?\" evet/hayır.","Çalışma testinde kapasite, akım, basınçlar ve su giriş-çıkış sıcaklıklarının kayda alınması ve kabul sınırıyla karşılaştırılması.","Isıtma ve soğutma kW değeri kaydediliyor; ısıtma nominal değere göre değerlendiriliyor. Akım ve basınç kaydı önerildi."],
+  ["Kayıt ve izlenebilirlik","Kâğıt form, imza ile onay.","ISO 9001:2015 madde 8.5.2 (izlenebilirlik), 8.6 (ürünün serbest bırakılması), 8.7 (uygunsuz çıktıların kontrolü).","Seri numarası bazlı dijital kayıt, sevke hazır / bekletme durumu, NCR ve fire kaydı."],
+  ["Mükerrer kontroller","Kasa çizik 3 kez, klemens 2 kez, manometre 3 kez.","Kalite kapısı yaklaşımı: her kontrolün amacı ve yeri tanımlıdır, gereksiz tekrar azaltılır.","Mükerrer maddeler işaretlendi; revizyonda birleştirme önerildi."],
+  ["Hata önleme","Kontroller büyük ölçüde tespit odaklı.","Poka-yoke: barkod ile kod okutma, tork kontrollü el aletleri, renk kodlu parçalar. Switchlerdeki renk kodu bunun iyi bir örneği.","Kod doğrulama maddeleri barkod okutmaya uygun; tork maddeleri Nm değeriyle yeniden yazılmalı."],
+  ["Performans göstergeleri","Ölçülen bir gösterge yok.","İlk seferde doğru (FPY), PPM, istasyon bazlı Pareto ve fire oranı.","Panelde FPY, istasyon Pareto'su, en sık uygunsuzluk çıkan maddeler ve fire adedi hesaplanıyor."]
+];
+var STRENGTHS = [
+  "Liste üretim akışını istasyon sırasıyla izliyor; uygunsuzluğun hangi istasyonda oluştuğu görülebiliyor.",
+  "Her madde operatör ve kalite tarafından ayrı onaylanıyor; iki aşamalı doğrulama var.",
+  "Cihaza özel parça kodları (EEV, eşanjör, kompresör, pompa, pano kartı) listede; model karışıklığına karşı doğrudan koruma sağlıyor.",
+  "Basınç switchlerinde renk kodu (siyah / yeşil) kullanılıyor; bu bir hata önleme örneği.",
+  "Maddelerin büyük kısmı tüm modellerde ortak; standartlaştırmaya uygun bir yapı."
+];
+
+/* ---------------- durum ---------------- */
+var KEY = "varmeks-qc-v1";
+var DEF = { records: [], settings: { showRec: true, gasTol: 2, perfTol: 10 } };
+function load() { try { var s = JSON.parse(localStorage.getItem(KEY)); if (s && s.records && s.records.length) { s.settings = Object.assign({}, DEF.settings, s.settings || {}); return s; } } catch (e) {}
+  if (window.__QC_SEED && window.__QC_SEED.records) { var z = JSON.parse(JSON.stringify(window.__QC_SEED)); z.settings = Object.assign({}, DEF.settings, z.settings || {}); try { localStorage.setItem(KEY, JSON.stringify(z)); } catch (e) {} return z; }
+  return JSON.parse(JSON.stringify(DEF)); }
+var S = load();
+function save() { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) { if (!cloud.user) toast("Kaydedilemedi: depolama dolu olabilir. Veri sayfasından yedek alın."); } cloudQueue(); }
+var ui = { view: "panel", rec: null, tab: "liste", critOnly: false, openGrp: {}, period: "all", dev: "all", fdev: "all", fst: "all", q: "", nw: { dev: "16kW", ser: "", n: 1, wo: "" }, hf: "all", hs: "all" };
+
+/* ---------------- bulut (Supabase) ---------------- */
+var CK = "varmeks-qc-sync-v1", CFGK = "varmeks-qc-cloudcfg";
+var cloud = { sb: null, user: null, state: "off", msg: "", last: null, timer: null, retry: null, busy: false, again: false, ch: null, pend: false };
+var SYN = (function () { try { return JSON.parse(localStorage.getItem(CK)) || {}; } catch (e) { return {}; } })();
+if (!SYN.r) SYN.r = {};
+function synSave() { try { localStorage.setItem(CK, JSON.stringify(SYN)); } catch (e) {} }
+function canon(o) {
+  if (Array.isArray(o)) return "[" + o.map(canon).join(",") + "]";
+  if (o && typeof o === "object") return "{" + Object.keys(o).sort().filter(function (k) { return o[k] !== undefined; }).map(function (k) { return JSON.stringify(k) + ":" + canon(o[k]); }).join(",") + "}";
+  return JSON.stringify(o === undefined ? null : o);
+}
+function cloudCfg() {
+  var c = window.QC_CLOUD || {}; if (c.url && c.key) return c;
+  try { var o = JSON.parse(localStorage.getItem(CFGK)); if (o && o.url && o.key) return o; } catch (e) {}
+  return null;
+}
+var CLOUD_LAB = { off: "Bulut ayarlanmadı", login: "Giriş gerekli", sync: "Eşitleniyor…", ok: "Bulutla eşit", wait: "Gönderilecek değişiklik var", err: "Buluta ulaşılamıyor" };
+function setCloud(st, msg) { cloud.state = st; cloud.msg = msg || ""; paintCloud(); }
+function paintCloud() {
+  var els = document.querySelectorAll(".cloudst");
+  for (var i = 0; i < els.length; i++) { els[i].className = "cloudst st-" + cloud.state; els[i].textContent = CLOUD_LAB[cloud.state]; els[i].title = cloud.msg || ""; }
+}
+function errText(e) {
+  var m = (e && (e.message || e.error_description)) || String(e);
+  if (/Invalid login/i.test(m)) return "E-posta veya şifre hatalı.";
+  if (/Failed to fetch|NetworkError|network/i.test(m)) return "İnternet bağlantısı yok.";
+  if (/row-level security|permission denied|JWT/i.test(m)) return "Yetki hatası: oturum süresi dolmuş olabilir, çıkış yapıp tekrar girin.";
+  if (/relation .* does not exist|Could not find the table/i.test(m)) return "Supabase tabloları kurulmamış (kurulum SQL'i çalıştırılmalı).";
+  return m;
+}
+function dirty() {
+  var up = [], seen = {};
+  S.records.forEach(function (r) { seen[r.id] = 1; var j = canon(r); if (SYN.r[r.id] !== j) up.push({ id: r.id, data: r, j: j }); });
+  var del = Object.keys(SYN.r).filter(function (id) { return !seen[id]; });
+  var sj = canon(S.settings);
+  return { up: up, del: del, set: SYN.s !== sj ? sj : null, n: up.length + del.length + (SYN.s !== sj ? 1 : 0) };
+}
+function cloudQueue() {
+  if (!cloud.sb) return;
+  if (!cloud.user) { setCloud("login"); return; }
+  clearTimeout(cloud.timer); cloud.timer = setTimeout(cloudPush, 1200);
+  if (cloud.state !== "sync") setCloud("wait");
+}
+async function cloudPush() {
+  if (!cloud.sb || !cloud.user || !SYN.init) return;
+  if (cloud.busy) { cloud.again = true; return; }
+  clearTimeout(cloud.retry);
+  var d = dirty();
+  if (!d.n) { setCloud("ok"); return; }
+  cloud.busy = true; setCloud("sync");
+  try {
+    var who = cloud.user.email || "";
+    for (var i = 0; i < d.up.length; i += 200) {
+      var part = d.up.slice(i, i + 200);
+      var res = await cloud.sb.from("qc_records").upsert(part.map(function (x) { return { id: x.id, data: x.data, updated_by: who }; }));
+      if (res.error) throw res.error;
+      part.forEach(function (x) { SYN.r[x.id] = x.j; }); synSave();
+    }
+    if (d.del.length) {
+      var rd = await cloud.sb.from("qc_records").delete().in("id", d.del);
+      if (rd.error) throw rd.error;
+      d.del.forEach(function (id) { delete SYN.r[id]; }); synSave();
+    }
+    if (d.set != null) {
+      var rs = await cloud.sb.from("qc_settings").upsert({ id: 1, data: S.settings, updated_by: who });
+      if (rs.error) throw rs.error;
+      SYN.s = d.set; synSave();
+    }
+    cloud.last = new Date(); setCloud("ok");
+  } catch (e) {
+    setCloud("err", errText(e)); cloud.retry = setTimeout(cloudPush, 20000);
+  }
+  cloud.busy = false;
+  if (cloud.again) { cloud.again = false; cloudPush(); } else if (cloud.state === "ok" && dirty().n) cloudPush();
+}
+async function cloudPull() {
+  var all = [], from = 0;
+  for (;;) {
+    var r = await cloud.sb.from("qc_records").select("id,data").order("id").range(from, from + 999);
+    if (r.error) throw r.error;
+    all = all.concat(r.data || []); if (!r.data || r.data.length < 1000) break; from += 1000;
+  }
+  var st = await cloud.sb.from("qc_settings").select("data").eq("id", 1).maybeSingle();
+  if (st.error) throw st.error;
+  return { recs: all, set: st.data ? st.data.data : null };
+}
+function saveLocal() { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {} }
+async function cloudStart() {
+  clearTimeout(cloud.retry);
+  setCloud("sync");
+  try {
+    var cold = !SYN.init;
+    if (!cold) { cloud.busy = false; await cloudPush(); if (cloud.state === "err") throw new Error(cloud.msg); }
+    var p = await cloudPull();
+    var keep = [];
+    if (cold && S.records.length) {
+      var ids = {}; p.recs.forEach(function (x) { ids[x.id] = 1; });
+      var extra = S.records.filter(function (r) { return !ids[r.id]; });
+      if (extra.length && confirm((p.recs.length ? "Bu tarayıcıda bulutta olmayan " + extra.length + " kontrol kartı var." : "Bulut henüz boş. Bu tarayıcıda " + extra.length + " kontrol kartı var.") + " Buluta yüklensin mi?\n\nHayır derseniz bu kartlar bu tarayıcıdan kaldırılır (önce Veri sayfasından yedek almanız önerilir).")) keep = extra;
+    }
+    S.records = p.recs.map(function (x) { return x.data; }).concat(keep);
+    S.settings = Object.assign({}, DEF.settings, p.set || S.settings || {});
+    SYN = { r: {}, init: 1, s: p.set ? canon(S.settings) : null };
+    p.recs.forEach(function (x) { SYN.r[x.id] = canon(x.data); });
+    synSave(); normalizeAll(); saveLocal();
+    cloud.last = new Date(); setCloud("ok");
+    softRender();
+    subscribe();
+    if (dirty().n) cloudPush();
+  } catch (e) {
+    clearTimeout(cloud.retry); setCloud("err", errText(e)); cloud.retry = setTimeout(cloudStart, 20000);
+  }
+}
+function softRender() {
+  var a = document.activeElement;
+  if (a && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName) && document.getElementById("v").contains(a)) {
+    if (!cloud.pend) { cloud.pend = true; a.addEventListener("blur", function () { cloud.pend = false; setTimeout(render, 0); }, { once: true }); }
+    return;
+  }
+  render();
+}
+function subscribe() {
+  if (cloud.ch) return;
+  cloud.ch = cloud.sb.channel("qc-records").on("postgres_changes", { event: "*", schema: "public", table: "qc_records" }, function (pl) {
+    var i;
+    if (pl.eventType === "DELETE") {
+      var id = pl.old && pl.old.id; if (!id) return;
+      i = S.records.findIndex(function (r) { return r.id === id; });
+      if (i >= 0 && SYN.r[id] !== canon(S.records[i])) return; // bu cihazda gönderilmemiş değişiklik var
+      delete SYN.r[id]; if (i >= 0) S.records.splice(i, 1);
+      if (ui.rec === id) ui.rec = null;
+    } else {
+      var row = pl.new; if (!row || !row.id) return;
+      var j = canon(row.data);
+      i = S.records.findIndex(function (r) { return r.id === row.id; });
+      if (i >= 0) {
+        var cur = canon(S.records[i]);
+        if (cur === j) { SYN.r[row.id] = j; synSave(); return; } // kendi kaydımızın yankısı
+        if (SYN.r[row.id] !== cur) return; // bu cihazda gönderilmemiş değişiklik var, yerel kazanır
+        S.records[i] = row.data;
+      } else S.records.push(row.data);
+      SYN.r[row.id] = j;
+    }
+    synSave(); saveLocal(); softRender();
+  }).subscribe();
+}
+function showLogin(err) {
+  var el = document.getElementById("login");
+  if (!el) { el = document.createElement("div"); el.id = "login"; document.body.appendChild(el); }
+  el.innerHTML = '<form class="lgbox" id="lgForm" autocomplete="on"><div class="emblem">' + emblem() + '</div>' +
+    '<h2>Kalite kontrol girişi</h2><p class="muted small">Kontrol kartları bulutta saklanır. Devam etmek için hesabınızla giriş yapın.</p>' +
+    '<label class="lab">E-posta<input class="in" type="email" name="email" autocomplete="username" required></label>' +
+    '<label class="lab">Şifre<input class="in" type="password" name="pw" autocomplete="current-password" required></label>' +
+    (err ? '<p class="lgerr">' + esc(err) + '</p>' : '') +
+    '<button class="btn pri" type="submit" style="width:100%">Giriş yap</button>' +
+    '<p class="muted small" style="margin-top:14px">Hesabınız yoksa yöneticiden isteyin.</p></form>';
+  el.hidden = false;
+  var f = el.querySelector("input[name=email]"); if (f) f.focus();
+}
+function hideLogin() { var el = document.getElementById("login"); if (el) el.hidden = true; }
+document.addEventListener("submit", function (ev) {
+  if (ev.target.id === "lgForm") {
+    ev.preventDefault();
+    var f = ev.target, b = f.querySelector("button"); b.disabled = true; b.textContent = "Giriş yapılıyor…";
+    cloud.sb.auth.signInWithPassword({ email: f.email.value.trim(), password: f.pw.value }).then(function (r) {
+      if (r.error) { showLogin(errText(r.error)); return; }
+      cloud.user = r.data.user; hideLogin(); cloudStart();
+    }).catch(function (e) { showLogin(errText(e)); });
+  }
+  if (ev.target.id === "cfgForm") {
+    ev.preventDefault();
+    var u = ev.target.url.value.trim().replace(/\/+$/, ""), k = ev.target.key.value.trim();
+    if (!/^https:\/\/.+/.test(u) || k.length < 20) { toast("Adres ya da anahtar geçersiz görünüyor."); return; }
+    try { localStorage.setItem(CFGK, JSON.stringify({ url: u, key: k })); } catch (e) {}
+    location.reload();
+  }
+});
+function cloudInit() {
+  var c = cloudCfg();
+  if (!c) { setCloud("off"); return; }
+  if (!window.supabase || !window.supabase.createClient) { setCloud("err", "Supabase kütüphanesi yüklenemedi; internet bağlantısını kontrol edin."); return; }
+  cloud.sb = window.supabase.createClient(c.url, c.key, { auth: { persistSession: true, autoRefreshToken: true, storageKey: "varmeks-qc-auth" } });
+  cloud.sb.auth.getSession().then(function (r) {
+    var s = r.data && r.data.session;
+    if (s) { cloud.user = s.user; cloudStart(); } else { setCloud("login"); showLogin(); }
+  });
+  cloud.sb.auth.onAuthStateChange(function (ev, s) {
+    if (ev === "SIGNED_OUT") { cloud.user = null; setCloud("login"); showLogin(); }
+    else if (s && s.user) cloud.user = s.user;
+  });
+  window.addEventListener("online", function () { if (cloud.user) cloudStart(); });
+}
+function cloudPanel() {
+  var c = cloudCfg(), d = SYN.init ? dirty() : null;
+  var h = '<div class="panel" style="margin:16px 0"><h2>Bulut (Supabase)</h2>';
+  if (!c) {
+    h += '<p class="muted">Bulut bağlantısı ayarlanmamış; veriler şu an yalnızca bu tarayıcıda. Supabase proje adresini ve anon (public) anahtarını girin.</p>' +
+      '<form id="cfgForm"><label class="lab">Proje adresi (URL)<input class="in" name="url" placeholder="https://xxxx.supabase.co"></label>' +
+      '<label class="lab">Anon / publishable anahtar<input class="in" name="key"></label><button class="btn pri" type="submit">Kaydet ve bağlan</button></form>';
+  } else {
+    h += '<p><span class="cloudst st-' + cloud.state + '">' + CLOUD_LAB[cloud.state] + '</span></p>' +
+      (cloud.msg ? '<p class="muted small">' + esc(cloud.msg) + '</p>' : '') +
+      '<p class="muted">Kullanıcı: <b>' + esc(cloud.user ? cloud.user.email : "—") + '</b>' +
+      (cloud.last ? ' · son eşitleme ' + cloud.last.toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit" }) : '') +
+      (d && d.n ? ' · <b>' + d.n + '</b> değişiklik gönderilmeyi bekliyor' : '') + '</p>' +
+      '<div class="row"><button class="btn" data-act="csync">Şimdi eşitle</button><button class="btn ghost" data-act="logout">Çıkış yap</button></div>' +
+      '<p class="muted small" style="margin-top:12px">Her değişiklik bir iki saniye içinde buluta gönderilir; başka cihazdaki değişiklikler buraya kendiliğinden gelir. İnternet kesilirse kayıt bu cihazda bekler, bağlantı gelince gönderilir. Silinen ya da değiştirilen her kartın eski hâli bulutta geçmiş tablosunda saklanır.</p>';
+  }
+  return h + '</div>';
+}
+function cloudLogout() {
+  var d = SYN.init ? dirty() : { n: 0 };
+  if (d.n && !confirm(d.n + " değişiklik henüz buluta gönderilmedi ve çıkışta bu cihazdan silinecek. Yine de çıkılsın mı?")) return;
+  if (!d.n && !confirm("Çıkış yapılsın mı? Bu cihazdaki önbellek temizlenir; tekrar girişte veriler buluttan gelir.")) return;
+  try { localStorage.removeItem(KEY); localStorage.removeItem(CK); } catch (e) {}
+  SYN = { r: {} }; S = JSON.parse(JSON.stringify(DEF));
+  if (cloud.ch) { cloud.sb.removeChannel(cloud.ch); cloud.ch = null; }
+  cloud.sb.auth.signOut(); ui.view = "panel"; ui.rec = null; render();
+}
+
+
+function uid() { return Math.random().toString(36).slice(2, 10) + Date.now().toString(36).slice(-4); }
+function esc(x) { return String(x == null ? "" : x).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;"); }
+function today() { var d = new Date(); return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0"); }
+function trDate(iso) { if (!iso) return "—"; var p = String(iso).split("-"); return p.length === 3 ? p[2] + "." + p[1] + "." + p[0] : iso; }
+function devLabel(k) { var d = CHK_DEVICES.find(function (x) { return x.key === k; }); return d ? d.label : k; }
+function devDoc(k) { var d = CHK_DEVICES.find(function (x) { return x.key === k; }); return d ? d.doc : ""; }
+function toast(t) { var el = document.createElement("div"); el.className = "toast"; el.setAttribute("role", "status"); el.textContent = t; document.body.appendChild(el); setTimeout(function () { el.remove(); }, 2400); }
+function pct(a, b) { return b ? Math.round(a / b * 100) : 0; }
+
+/* ---------------- madde kataloğu ---------------- */
+function ordNo(n) { n = String(n); return n.charAt(0) === "Ö" ? 1000 + parseInt(n.slice(1), 10) : parseInt(n, 10); }
+function itemsFor(dk, forceRec) {
+  var base = ((CHK_CATALOG[dk] || { items: [] }).items).map(function (it) {
+    var c = CLS[it.no] || ["GORSEL", "m"];
+    return { no: String(it.no), st: it.st, p: it.p, m: it.m, k: it.k, cat: c[0], crit: c[1], rec: false };
+  });
+  var arr = base;
+  if (S.settings.showRec || forceRec) arr = arr.concat(REC.map(function (x) { return Object.assign({ rec: true }, x); }));
+  return arr.sort(function (a, b) { return CHK_STATIONS.indexOf(a.st) - CHK_STATIONS.indexOf(b.st) || ordNo(a.no) - ordNo(b.no); });
+}
+function evalMeas(r, it, val) {
+  var spec = MEAS[it.no]; if (!spec || val === "" || val == null) return null;
+  var v = parseFloat(String(val).replace(",", ".")); if (isNaN(v)) return null;
+  if (spec.kind === "gas") { var t = parseInt(String(it.k).replace(/\D/g, ""), 10); if (!t) return null; var dv = (v - t) / t * 100; return { ok: Math.abs(dv) <= S.settings.gasTol, txt: "Hedef " + t + " g, sapma " + (dv > 0 ? "+" : "") + dv.toFixed(1) + "% (tolerans ±" + S.settings.gasTol + "%)" }; }
+  if (spec.kind === "heat") { var n = NOM[r.deviceKey]; if (!n) return null; var lim = n * (1 - S.settings.perfTol / 100); return { ok: v >= lim, txt: "Nominal " + n + " kW, alt sınır " + lim.toFixed(1) + " kW (%" + Math.round(v / n * 100) + ")" }; }
+  return { ok: null, txt: "Kaydedildi" };
+}
+function evalRec(r) {
+  var items = itemsFor(r.deviceKey), done = 0, nok = [], crit = [], st = {};
+  CHK_STATIONS.forEach(function (s) { st[s] = { n: 0, done: 0, nok: 0, crit: 0 }; });
+  items.forEach(function (it) {
+    var m = r.marks[it.no] || {}, s = st[it.st]; if (!s) return;
+    s.n += 2; if (m.op) { done++; s.done++; } if (m.qc) { done++; s.done++; }
+    if (m.op === "NOK" || m.qc === "NOK") { nok.push(it); s.nok++; if (it.crit === "K") { crit.push(it); s.crit++; } }
+  });
+  var total = items.length * 2;
+  var status = crit.length ? "hold" : nok.length ? "nok" : (done === total ? "ok" : "run");
+  var stState = {};
+  CHK_STATIONS.forEach(function (s) { var x = st[s]; stState[s] = x.n === 0 ? "none" : x.crit ? "hold" : x.nok ? "nok" : x.done === x.n ? "ok" : x.done ? "part" : "todo"; });
+  var complete = done === total;
+  var fpy = complete && !nok.length && !(r.ncr || []).length;
+  return { items: items, done: done, total: total, pct: pct(done, total), nok: nok, crit: crit, status: status, stState: stState, complete: complete, fpy: fpy };
+}
+function curRec() { return S.records.find(function (r) { return r.id === ui.rec; }); }
+
+/* ---------------- ikonlar ve amblem ---------------- */
+function emblem() {
+  return '<svg viewBox="0 0 210 52" role="img" aria-label="VARMEKS Heat Pumps"><text x="0" y="31" font-family="Arial Black,Arial,Helvetica,sans-serif" font-weight="900" font-size="33" letter-spacing="0.5" fill="#C8102E">VARMEKS</text><text x="2" y="48" font-family="Arial,Helvetica,sans-serif" font-size="12.6" letter-spacing="8.1" fill="#9AA0A6">HEAT PUMPS</text></svg>';
+}
+var IC = {
+  panel: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 13h4v7H3zM10 4h4v16h-4zM17 9h4v11h-4z"/></svg>',
+  kontrol: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M9 8l1.5 1.5L13 7M9 13l1.5 1.5L13 12M9 18h6"/></svg>',
+  analiz: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l5 5M8.5 11h5M11 8.5v5"/></svg>',
+  hatalar: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3l9.5 17h-19z"/><path d="M12 10v4.5M12 17.5v.5"/></svg>',
+  veri: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><ellipse cx="12" cy="6" rx="7" ry="2.8"/><path d="M5 6v12c0 1.5 3.1 2.8 7 2.8s7-1.3 7-2.8V6M5 12c0 1.5 3.1 2.8 7 2.8s7-1.3 7-2.8"/></svg>'
+};
+var NAV = [["panel", "Panel"], ["kontrol", "Kontrol kartları"], ["hatalar", "Hata sınıflandırma"], ["analiz", "Liste analizi"], ["veri", "Veri ve ayarlar"]];
+var NAVM = { panel: "Panel", kontrol: "Kartlar", hatalar: "Hatalar", analiz: "Analiz", veri: "Veri" };
+function renderNav() {
+  document.getElementById("navRail").innerHTML = NAV.map(function (n) { return '<button data-act="nav" data-v="' + n[0] + '"' + (ui.view === n[0] ? ' aria-current="page"' : "") + '>' + IC[n[0]] + esc(n[1]) + '</button>'; }).join("");
+  document.getElementById("navBottom").innerHTML = NAV.map(function (n) { return '<button data-act="nav" data-v="' + n[0] + '"' + (ui.view === n[0] ? ' aria-current="page"' : "") + '>' + IC[n[0]] + esc(NAVM[n[0]]) + '</button>'; }).join("");
+}
+
+/* ---------------- ortak bileşenler ---------------- */
+function lineStrip(stState, big) {
+  return '<div class="line' + (big ? " big" : "") + '" role="img" aria-label="İstasyon durumları">' + CHK_STATIONS.map(function (s) {
+    return '<div><div class="seg ' + stState[s] + '" title="' + esc(s) + ": " + STL[stState[s]] + '"></div>' + (big ? '<span class="seg-l">' + esc(SHORT[s] || s) + '</span>' : "") + '</div>';
+  }).join("") + '</div>';
+}
+function stBadge(s) { return '<span class="st ' + s + '">' + STATUS[s] + '</span>'; }
+function filtered() {
+  var now = new Date();
+  return S.records.filter(function (r) {
+    if (ui.dev !== "all" && r.deviceKey !== ui.dev) return false;
+    if (ui.period === "all") return true;
+    var d = new Date((r.date || today()) + "T00:00:00"); var days = (now - d) / 864e5;
+    if (ui.period === "7") return days <= 7;
+    if (ui.period === "30") return days <= 30;
+    if (ui.period === "month") return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+    return true;
+  });
+}
+
+/* ---------------- PANEL ---------------- */
+function viewPanel() {
+  var recs = filtered(), E = recs.map(function (r) { return { r: r, e: evalRec(r) }; });
+  var complete = E.filter(function (x) { return x.e.complete; });
+  var fpyN = complete.filter(function (x) { return x.e.fpy; }).length;
+  var nokItems = 0, holdN = 0, fireQty = 0, ncrOpen = 0;
+  var bySt = {}, byItem = {};
+  CHK_STATIONS.forEach(function (s) { bySt[s] = 0; });
+  E.forEach(function (x) {
+    nokItems += x.e.nok.length; if (x.e.status === "hold") holdN++;
+    (x.r.fire || []).forEach(function (f) { fireQty += parseInt(String(f.qty).replace(/\D/g, ""), 10) || 0; });
+    (x.r.ncr || []).forEach(function (n) { if (n.durum !== "Kapalı") ncrOpen++; });
+    x.e.nok.forEach(function (it) { bySt[it.st] = (bySt[it.st] || 0) + 1; var k = it.no + "|" + it.p; byItem[k] = (byItem[k] || 0) + 1; });
+  });
+  var maxSt = Math.max.apply(null, CHK_STATIONS.map(function (s) { return bySt[s]; }).concat([1]));
+  var heat = '<div class="line heat" role="img" aria-label="İstasyonlara göre uygunsuzluk sayısı">' + CHK_STATIONS.map(function (s) {
+    var v = bySt[s], a = v ? 0.25 + 0.75 * v / maxSt : 0;
+    var bg = v ? "rgba(200,16,46," + a.toFixed(2) + ")" : "#232629";
+    return '<div><div class="seg" style="background:' + bg + '" title="' + esc(s) + ": " + v + ' uygunsuzluk"><b>' + v + '</b><small>' + esc(SHORT[s]) + '</small></div></div>';
+  }).join("") + '</div>';
+
+  var stRows = CHK_STATIONS.map(function (s) { return [s, bySt[s]]; }).filter(function (x) { return x[1] > 0; }).sort(function (a, b) { return b[1] - a[1]; });
+  var stTotal = stRows.reduce(function (a, x) { return a + x[1]; }, 0), cum = 0;
+  var pareto = stRows.length ? '<table class="tbl"><thead><tr><th>İstasyon</th><th style="width:40%">Uygunsuzluk</th><th class="num">Adet</th><th class="num">Kümülatif</th></tr></thead><tbody>' + stRows.map(function (x) {
+    var prev = cum; cum += x[1]; return '<tr><td>' + esc(x[0]) + '</td><td><div class="bar' + (pct(prev, stTotal) < 80 ? " red" : "") + '"><i style="width:' + pct(x[1], stRows[0][1]) + '%"></i></div></td><td class="num">' + x[1] + '</td><td class="num">%' + pct(cum, stTotal) + '</td></tr>';
+  }).join("") + '</tbody></table><p class="small muted" style="margin-top:8px">Kırmızı çubuklar uygunsuzlukların ilk %80\'ini oluşturan istasyonlar; iyileştirmeye buradan başlanmalı.</p>' : '<div class="empty">Seçilen dönemde uygunsuz madde yok.</div>';
+
+  var itemRows = Object.keys(byItem).map(function (k) { return [k, byItem[k]]; }).sort(function (a, b) { return b[1] - a[1]; }).slice(0, 8);
+  var topItems = itemRows.length ? '<table class="tbl"><thead><tr><th>Madde</th><th class="num">Adet</th></tr></thead><tbody>' + itemRows.map(function (x) { var p = x[0].split("|"); return '<tr><td><span class="muted">' + esc(p[0]) + '</span> ' + esc(p[1]) + '</td><td class="num">' + x[1] + '</td></tr>'; }).join("") + '</tbody></table>' : '<div class="empty">Henüz uygunsuz madde yok.</div>';
+
+  var devRows = CHK_DEVICES.map(function (d) {
+    var xs = E.filter(function (x) { return x.r.deviceKey === d.key; }), cp = xs.filter(function (x) { return x.e.complete; });
+    var fq = 0; xs.forEach(function (x) { (x.r.fire || []).forEach(function (f) { fq += parseInt(String(f.qty).replace(/\D/g, ""), 10) || 0; }); });
+    return '<tr><td>' + esc(d.label) + '</td><td class="num">' + xs.length + '</td><td class="num">' + cp.length + '</td><td class="num">' + (cp.length ? "%" + pct(cp.filter(function (x) { return x.e.fpy; }).length, cp.length) : "—") + '</td><td class="num">' + xs.reduce(function (a, x) { return a + x.e.nok.length; }, 0) + '</td><td class="num">' + fq + '</td></tr>';
+  }).join("");
+
+  var periodBtns = [["all", "Tümü"], ["7", "Son 7 gün"], ["30", "Son 30 gün"], ["month", "Bu ay"]].map(function (p) { return '<button data-act="period" data-v="' + p[0] + '" aria-pressed="' + (ui.period === p[0]) + '">' + p[1] + '</button>'; }).join("");
+  var devBtns = [["all", "Tüm modeller"]].concat(CHK_DEVICES.map(function (d) { return [d.key, d.label.replace("VARM UP ", "")]; })).map(function (p) { return '<button data-act="dev" data-v="' + p[0] + '" aria-pressed="' + (ui.dev === p[0]) + '">' + esc(p[1]) + '</button>'; }).join("");
+
+  var html = nlBanner() + '<h1>Hat kalitesi</h1><p class="lead">' + recs.length + ' kontrol kartı, ' + complete.length + ' tanesi tamamlandı. İstasyonlar üretim sırasına göre soldan sağa dizili.</p>' +
+    '<div class="row" style="margin-bottom:14px"><div class="seg-btns">' + periodBtns + '</div><div class="seg-btns">' + devBtns + '</div></div>' +
+    '<div class="panel" style="margin-bottom:16px"><div class="between" style="margin-bottom:12px"><h2 style="margin:0">Uygunsuzlukların hatta dağılımı</h2><span class="small muted">Renk koyulaştıkça uygunsuzluk artar</span></div><div class="scroll">' + heat + '</div></div>' +
+    '<div class="kpis" style="margin-bottom:16px">' +
+      kpi(recs.length, "Kontrol kartı") + kpi(complete.length, "Tamamlanan") +
+      kpi(complete.length ? "%" + pct(fpyN, complete.length) : "—", "İlk seferde doğru (FPY)") +
+      kpi(nokItems, "Uygunsuz madde", nokItems > 0) + kpi(holdN, "Bekletmede (kritik)", holdN > 0) + kpi(fireQty, "Fire adedi", fireQty > 0) +
+    '</div>' +
+    '<div class="grid2"><div class="panel"><h2>İstasyon Pareto analizi</h2>' + pareto + '</div><div class="panel"><h2>En sık uygunsuz çıkan maddeler</h2>' + topItems + '</div></div>' +
+    (function () { var L = allNcr(recs); if (!L.length) return ''; var bs = countBy(L, function (x) { return x.n.sinif; }), bt = countBy(L, function (x) { return x.n.tip; }); var un = L.filter(function (x) { return !x.n.sinif; }).length;
+      return '<div class="grid2" style="margin-top:16px"><div class="panel"><h2>Kök neden sınıfına göre</h2>' + barTable(bs, L.length, sinifAd, 'red') + (un ? '<p class="small muted" style="margin-top:8px">' + un + ' kayıt sınıflandırılmamış. <button class="btn sm" data-act="nav" data-v="hatalar">Sınıflandır</button></p>' : '') + '</div><div class="panel"><h2>Hata tipine göre</h2>' + barTable(bt, L.length, tipAd) + '</div></div>'; })() +
+    '<div class="panel" style="margin-top:16px"><h2>Modellere göre</h2><div class="scroll"><table class="tbl"><thead><tr><th>Model</th><th class="num">Kart</th><th class="num">Tamamlanan</th><th class="num">FPY</th><th class="num">Uygunsuz madde</th><th class="num">Fire adedi</th></tr></thead><tbody>' + devRows + '</tbody></table></div>' +
+    (ncrOpen ? '<p class="small muted" style="margin-top:10px">' + ncrOpen + ' açık uygunsuzluk kaydı (NCR) var.</p>' : "") + '</div>';
+  if (!S.records.length) html += '<div class="panel empty" style="margin-top:16px">Henüz kontrol kartı yok. <button class="btn pri" data-act="nav" data-v="kontrol" style="margin-left:8px">İlk kartı oluştur</button></div>';
+  return html;
+}
+function kpi(v, l, alert) { return '<div class="kpi' + (alert ? " alert" : "") + '"><b>' + v + '</b><span>' + l + '</span></div>'; }
+
+/* ---------------- KONTROL KARTLARI: liste ---------------- */
+function parseSerial(raw) {
+  var num = String(raw || "").replace(/\D/g, "");
+  if (num.length >= 9) return { prefix: num.slice(0, 6), start: parseInt(num.slice(6), 10) || 1 };
+  if (num.length >= 6) return { prefix: num.slice(0, 6), start: 1 };
+  return { prefix: "", start: 1 };
+}
+function prefixDate(p) {
+  if (!p || p.length < 6) return "";
+  var y = "20" + p.slice(0, 2), m = p.slice(2, 4), d = p.slice(4, 6);
+  if (+m < 1 || +m > 12 || +d < 1 || +d > 31) return "";
+  return y + "-" + m + "-" + d;
+}
+function previewText() {
+  var nw = ui.nw, ps = parseSerial(nw.ser), n = Math.max(1, Math.min(200, parseInt(nw.n, 10) || 1));
+  if (!ps.prefix) return n > 1 ? "Seri başını girin (YYAAGG, ör. 260911)." : "Seri numarası girilmezse tek boş kart oluşur.";
+  var a = ps.prefix + String(ps.start).padStart(3, "0"), b = ps.prefix + String(ps.start + n - 1).padStart(3, "0");
+  var dt = prefixDate(ps.prefix);
+  return "Oluşacak seriler: " + a + (n > 1 ? " – " + b : "") + (dt ? ", tarih " + trDate(dt) : ", tarih bugün");
+}
+function createRecords() {
+  var nw = ui.nw, ps = parseSerial(nw.ser), n = Math.max(1, Math.min(200, parseInt(nw.n, 10) || 1));
+  if (n > 1 && !ps.prefix) { toast("Toplu oluşturmak için seri başını girin (ör. 260911)."); return; }
+  var dt = prefixDate(ps.prefix) || today(), made = [];
+  for (var i = 0; i < n; i++) {
+    var seq = ps.start + i;
+    made.push({ id: uid(), deviceKey: nw.dev, date: dt, serial: ps.prefix ? ps.prefix + String(seq).padStart(3, "0") : "", workOrder: nw.wo || "", operator: "", qc: "", batch: n > 1 ? ps.prefix : "", seq: seq, marks: {}, ncr: [], fire: [], createdAt: Date.now() + i });
+  }
+  S.records = made.concat(S.records); save();
+  ui.nw.ser = ""; ui.nw.n = 1;
+  if (n === 1) { ui.rec = made[0].id; ui.tab = "liste"; } else { ui.openGrp[nw.dev + "|" + ps.prefix] = true; toast(n + " kontrol kartı oluşturuldu."); }
+  render();
+}
+function recRow(r) {
+  var e = evalRec(r);
+  return '<button class="rec-row" data-act="open" data-id="' + r.id + '"><div><div class="serial">' + esc(r.serial || "Seri girilmedi") + '</div><div class="small muted">' + esc(devLabel(r.deviceKey)) + ', ' + trDate(r.date) + (r.workOrder ? ", İE " + esc(r.workOrder) : "") + '</div></div>' +
+    '<div class="hide-m">' + lineStrip(e.stState) + '</div><div>' + stBadge(e.status) + '</div><div class="num hide-m" style="text-align:right"><b>%' + e.pct + '</b></div></button>';
+}
+function viewList() {
+  var nw = ui.nw;
+  var devBtns = CHK_DEVICES.map(function (d) { return '<button data-act="nwdev" data-v="' + d.key + '" aria-pressed="' + (nw.dev === d.key) + '">' + esc(d.label.replace("VARM UP ", "")) + '</button>'; }).join("");
+  var create = '<div class="panel" style="margin-bottom:18px"><h2>Yeni kontrol kartı</h2>' +
+    '<div class="grid3"><div><span class="lb">Model</span><div class="seg-btns">' + devBtns + '</div></div>' +
+    '<div><label class="lb" for="nwser">Seri numarası veya seri başı</label><input id="nwser" class="in" inputmode="numeric" placeholder="260911 veya 260911001" value="' + esc(nw.ser) + '" data-f="new.ser"></div>' +
+    '<div class="row" style="align-items:flex-end;flex-wrap:nowrap"><div style="flex:1"><label class="lb" for="nwn">Adet</label><input id="nwn" class="in" type="number" min="1" max="200" value="' + esc(nw.n) + '" data-f="new.n"></div><div style="flex:1.4"><label class="lb" for="nwwo">İş emri (isteğe bağlı)</label><input id="nwwo" class="in" value="' + esc(nw.wo) + '" data-f="new.wo"></div></div></div>' +
+    '<div class="between" style="margin-top:12px;align-items:center"><span class="small muted" id="nwprev">' + esc(previewText()) + '</span><button class="btn pri" data-act="create">Kart oluştur</button></div></div>';
+
+  var stF = [["all", "Tümü"], ["run", "Sürüyor"], ["nok", "Uygunsuz"], ["hold", "Bekletme"], ["ok", "Sevke hazır"]].map(function (p) { return '<button data-act="fst" data-v="' + p[0] + '" aria-pressed="' + (ui.fst === p[0]) + '">' + p[1] + '</button>'; }).join("");
+  var dF = [["all", "Tümü"]].concat(CHK_DEVICES.map(function (d) { return [d.key, d.label.replace("VARM UP ", "")]; })).map(function (p) { return '<button data-act="fdev" data-v="' + p[0] + '" aria-pressed="' + (ui.fdev === p[0]) + '">' + esc(p[1]) + '</button>'; }).join("");
+  var filters = '<div class="row" style="margin-bottom:12px"><div class="seg-btns">' + dF + '</div><div class="seg-btns">' + stF + '</div><input class="in" style="max-width:220px" placeholder="Seri ara" value="' + esc(ui.q) + '" data-f="flt.q" data-rr="1" aria-label="Seri numarasıyla ara"></div>';
+
+  var recs = S.records.filter(function (r) {
+    if (ui.fdev !== "all" && r.deviceKey !== ui.fdev) return false;
+    if (ui.q && String(r.serial || "").indexOf(ui.q.replace(/\D/g, "")) < 0) return false;
+    if (ui.fst !== "all" && evalRec(r).status !== ui.fst) return false;
+    return true;
+  });
+  var groups = [], gmap = {};
+  recs.forEach(function (r) {
+    if (r.batch) { var k = r.deviceKey + "|" + r.batch; if (!gmap[k]) { gmap[k] = { k: k, r0: r, list: [] }; groups.push(gmap[k]); } gmap[k].list.push(r); }
+    else groups.push({ solo: r });
+  });
+  var list = groups.map(function (g) {
+    if (g.solo) return '<div class="grp">' + recRow(g.solo).replace('class="rec-row"', 'class="rec-row" style="border-top:0"') + '</div>';
+    var L = g.list.slice().sort(function (a, b) { return (a.seq || 0) - (b.seq || 0); });
+    var es = L.map(evalRec), open = !!ui.openGrp[g.k];
+    var cnt = { ok: 0, nok: 0, hold: 0, run: 0 }; es.forEach(function (e) { cnt[e.status]++; });
+    var done = es.reduce(function (a, e) { return a + e.done; }, 0), tot = es.reduce(function (a, e) { return a + e.total; }, 0);
+    var agg = {}; CHK_STATIONS.forEach(function (s) { var ss = es.map(function (e) { return e.stState[s]; }); agg[s] = ss.indexOf("hold") > -1 ? "hold" : ss.indexOf("nok") > -1 ? "nok" : ss.every(function (x) { return x === "ok" || x === "none"; }) ? "ok" : ss.some(function (x) { return x !== "todo" && x !== "none"; }) ? "part" : "todo"; });
+    var summary = [cnt.ok ? cnt.ok + " sevke hazır" : "", cnt.nok ? cnt.nok + " uygunsuz" : "", cnt.hold ? cnt.hold + " bekletmede" : "", cnt.run ? cnt.run + " sürüyor" : ""].filter(Boolean).join(", ");
+    return '<div class="grp"><button class="grp-h" data-act="grp" data-v="' + esc(g.k) + '" aria-expanded="' + open + '"><div><div class="serial">' + esc(L[0].serial) + ' – ' + esc(L[L.length - 1].serial.slice(-3)) + '</div><div class="small muted">' + esc(devLabel(g.r0.deviceKey)) + ', ' + trDate(g.r0.date) + ', ' + L.length + ' cihaz</div></div>' +
+      '<div class="hide-m">' + lineStrip(agg) + '</div><div class="small muted hide-m">' + esc(summary) + '</div><div class="num" style="text-align:right"><b>%' + pct(done, tot) + '</b><div class="small muted">' + (open ? "Kapat" : "Aç") + '</div></div></button>' +
+      (open ? L.map(recRow).join("") : "") + '</div>';
+  }).join('<div style="height:10px"></div>');
+  return nlBanner() + '<h1>Kontrol kartları</h1><p class="lead">Seri başı ve adet girerek bir günün üretimini tek seferde açın; kartlar seri grubu halinde listelenir.</p>' + create + filters +
+    (list || '<div class="panel empty">Bu filtreye uyan kart yok.</div>');
+}
+
+/* ---------------- KONTROL KARTI: detay ---------------- */
+function viewDetail(r) {
+  var e = evalRec(r);
+  var head = '<button class="back" data-act="back">‹ Kontrol kartları</button>' +
+    '<div class="between" style="margin-bottom:14px"><div><h1>' + esc(r.serial || "Seri girilmedi") + '</h1><div class="muted">' + esc(devLabel(r.deviceKey)) + ', model ' + esc((CHK_CATALOG[r.deviceKey] || {}).model || "") + ', doküman ' + esc(devDoc(r.deviceKey)) + '</div></div>' +
+    '<div style="text-align:right">' + stBadge(e.status) + '<div class="small muted" style="margin-top:6px">' + e.done + ' / ' + e.total + ' onay, %' + e.pct + '</div></div></div>' +
+    '<div class="panel" style="margin-bottom:16px">' + lineStrip(e.stState, true) + '</div>';
+  var info = '<div class="panel" style="margin-bottom:16px"><div class="grid3">' +
+    fld("Tarih", "rec.date", r.date, "date") + fld("Seri numarası", "rec.serial", r.serial) + fld("İş emri", "rec.workOrder", r.workOrder) +
+    fld("Operatör", "rec.operator", r.operator) + fld("Kalite kontrol (QC)", "rec.qc", r.qc) +
+    '<div><span class="lb">Durum gerekçesi</span><div class="small" style="padding-top:8px">' + (e.crit.length ? e.crit.length + " kritik madde uygun değil; ürün sevk edilemez." : e.nok.length ? e.nok.length + " madde uygun değil." : e.complete ? "Tüm maddeler onaylandı." : (e.total - e.done) + " onay bekliyor.") + '</div></div></div></div>';
+  var ncrN = (r.ncr || []).length, fireN = (r.fire || []).length;
+  var tabs = '<div class="tabs" role="tablist">' + [["liste", "Kontrol listesi"], ["ncr", "Uygunsuzluk kayıtları" + (ncrN ? " (" + ncrN + ")" : "")], ["fire", "Fire" + (fireN ? " (" + fireN + ")" : "")]].map(function (t) { return '<button role="tab" data-act="tab" data-v="' + t[0] + '" aria-selected="' + (ui.tab === t[0]) + '">' + t[1] + '</button>'; }).join("") + '</div>';
+  var body = ui.tab === "ncr" ? viewNcr(r) : ui.tab === "fire" ? viewFire(r) : viewChecklist(r, e);
+  var foot = '<div class="row" style="margin-top:20px"><button class="btn pri" data-act="print">Kontrol kartını yazdır (PDF)</button><button class="btn danger" data-act="delrec">Kartı sil</button></div>';
+  return head + info + tabs + body + foot;
+}
+function fld(label, path, val, type) { var id = "f_" + path.replace(/\W/g, ""); return '<div><label class="lb" for="' + id + '">' + label + '</label><input id="' + id + '" class="in" ' + (type ? 'type="' + type + '" ' : "") + 'value="' + esc(val || "") + '" data-f="' + path + '"></div>'; }
+function viewChecklist(r, e) {
+  var tb = '<div class="toolbar"><button class="btn" data-act="allok">Tümünü uygun işaretle</button><button class="btn ghost" data-act="crit" aria-pressed="' + ui.critOnly + '">' + (ui.critOnly ? "Tüm maddeleri göster" : "Yalnız kritik maddeler") + '</button><button class="btn ghost" data-act="clear">İşaretleri temizle</button><span class="small muted">Ölçüm girilen maddeler, operatör işareti boşsa toleransa göre otomatik işaretlenir.</span></div>';
+  var html = CHK_STATIONS.map(function (st) {
+    var items = e.items.filter(function (it) { return it.st === st && (!ui.critOnly || it.crit === "K"); });
+    if (!items.length) return "";
+    var state = e.stState[st];
+    return '<section class="station" style="margin-bottom:12px"><div class="station-h"><h3>' + esc(st) + '</h3><div class="row"><div class="seg ' + state + '" style="width:44px"></div><span class="small muted">' + STL[state] + '</span></div></div>' +
+      items.map(function (it) { return itemRow(r, it); }).join("") + '</section>';
+  }).join("");
+  return tb + html;
+}
+function itemRow(r, it) {
+  var m = r.marks[it.no] || {}, isNok = m.op === "NOK" || m.qc === "NOK";
+  var spec = MEAS[it.no], ev = spec ? evalMeas(r, it, m.val) : null;
+  var chips = '<span class="chip ' + it.crit + '">' + CRIT[it.crit] + '</span> <span class="chip">' + CAT[it.cat] + '</span>' + (it.rec ? ' <span class="chip rec">Önerilen yeni madde</span>' : "") + (FLAG[it.no] ? ' <span class="chip bad" title="Liste analizinde işaretlendi">' + esc(FLAG[it.no]) + '</span>' : "");
+  var meas = spec ? '<div class="meas"><label class="small muted" for="v_' + it.no + '">Ölçülen (' + spec.u + ')</label><input id="v_' + it.no + '" class="in" inputmode="decimal" value="' + esc(m.val || "") + '" data-f="val.' + it.no + '">' + (ev ? '<span class="chip ' + (ev.ok === true ? "good" : ev.ok === false ? "bad" : "") + '">' + (ev.ok === false ? "Tolerans dışı. " : ev.ok === true ? "Uygun. " : "") + esc(ev.txt) + '</span>' : "") + '</div>' : "";
+  function mk(col) { return '<div class="mk" role="group" aria-label="' + (col === "op" ? "Operatör" : "QC") + ' kararı">' + [["OK", "Uygun"], ["NOK", "Değil"], ["NA", "N/A"]].map(function (o) { return '<button data-act="mark" data-no="' + it.no + '" data-col="' + col + '" data-v="' + o[0] + '" aria-pressed="' + (m[col] === o[0]) + '">' + o[1] + '</button>'; }).join("") + '</div>'; }
+  return '<div class="item' + (isNok ? (it.crit === "K" ? " iscrit" : " isnok") : "") + '"><div><div class="p"><span class="no">' + esc(it.no) + '</span>' + esc(it.p) + '</div><div class="spec">' + (it.m && it.m !== "-" ? esc(it.m) + "; " : "") + esc(it.k) + '</div><div>' + chips + '</div>' + meas +
+    (isNok ? '<div style="margin-top:8px"><button class="btn sm" data-act="ncrfrom" data-no="' + it.no + '">Uygunsuzluk kaydı aç</button></div>' : "") +
+    '</div><div class="marks"><span class="who">Operatör</span>' + mk("op") + '<span class="who">QC</span>' + mk("qc") + '</div></div>';
+}
+function stOpts(sel) { return '<option value="">Seçin</option>' + CHK_STATIONS.map(function (s) { return '<option' + (s === sel ? " selected" : "") + '>' + esc(s) + '</option>'; }).join(""); }
+/* ---------------- hata sınıflandırma ---------------- */
+var SINIF = [["Operatör","Operatör (insan)"],["Makine","Makine / ekipman"],["Malzeme","Malzeme / parça"],["Tedarikçi","Tedarikçi"],["Proses","Proses / yöntem"],["Ölçüm","Ölçüm / test"],["Taşıma","Taşıma / depolama"],["Tasarım","Tasarım"],["Araştırılıyor","Araştırılıyor"]];
+var SINIF_AD = {}; SINIF.forEach(function (s) { SINIF_AD[s[0]] = s[1]; });
+var HTIP = [
+  {id:"gaz_eksik",ad:"Eksik gaz şarjı / düşük kapasite",grup:"Soğutucu devre",st:"Gaz Dolum İstasyonu",neden:[["Gaz tüpü veya tüp borusunda kırık / çatlak","Malzeme"],["Gaz tüpü tedarikçi kaynaklı arızalı","Tedarikçi"],["Gaz şarj makinesi ayarı / kalibrasyonu","Makine"],["Operatör yanlış program veya eksik şarj","Operatör"],["Devrede kaçak nedeniyle gaz kaybı","Proses"]]},
+  {id:"gaz_kacak",ad:"Gaz kaçağı",grup:"Soğutucu devre",st:"Gaz Dolum İstasyonu",neden:[["Kaynak / lehim noktasından kaçak","Operatör"],["Rekor / havşa bağlantısı sızdırıyor","Proses"],["Parça (valf, switch) kaynaklı kaçak","Malzeme"],["Kaçak testi yetersiz (süre / basınç)","Ölçüm"]]},
+  {id:"kaynak",ad:"Kaynak / lehim hatası",grup:"Soğutucu devre",st:"Kaynak İstasyonu",neden:[["Operatör kaynak uygulaması","Operatör"],["Kaynak parametresi / BPS uygunsuz","Proses"],["Boru yüzeyi kirli, hazırlık eksik","Proses"],["Kaynak ekipmanı arızası","Makine"]]},
+  {id:"uvw",ad:"Kompresör UVW kablo bağlantı hatası",grup:"Elektrik",st:"Elektrik Montaj",neden:[["Kablolar yanlış sırayla takılmış","Operatör"],["Kablo eksik / takılmamış","Operatör"],["İş talimatı veya görsel standart eksik","Proses"],["Kablo etiketi / renk kodu yok","Tasarım"]]},
+  {id:"kablo",ad:"Kablo, pabuç veya klemens bağlantı hatası",grup:"Elektrik",st:"Elektrik Montaj",neden:[["Eksik kablo / takılmamış bağlantı","Operatör"],["Temassızlık / gevşek bağlantı","Operatör"],["Pabuç veya kablo kopması, çatlama","Malzeme"],["Sıkma aparatı / tork uygunsuz","Makine"]]},
+  {id:"sensor",ad:"Sensör montaj hatası / sensör arızası",grup:"Elektrik",st:"Elektrik Montaj",neden:[["Sensör ters veya yanlış yere takılmış","Operatör"],["Sensör yerinden çıkmış, sabitleme eksik","Proses"],["Sensör arızalı (parça)","Malzeme"],["Sensör tedarikçi kaynaklı","Tedarikçi"]]},
+  {id:"kart",ad:"Kontrol kartı / ekran arızası",grup:"Elektrik",st:"Pano Montaj Bölümü",neden:[["Kart veya ekran arızalı geldi","Tedarikçi"],["Montajda hasar","Operatör"],["Yazılım / parametre","Tasarım"]]},
+  {id:"montaj",ad:"Parça montaj hatası (sıkışma, yanlış yerleşim)",grup:"Mekanik",st:"Montaj İstasyonu",neden:[["Operatör montaj hatası","Operatör"],["İş talimatı eksik / belirsiz","Proses"],["Parça ölçüsü uygunsuz","Malzeme"],["Tasarım kaynaklı montaj zorluğu","Tasarım"]]},
+  {id:"cizik",ad:"Çizik (kozmetik)",grup:"Görsel",st:"Isıtma-Soğutma Test İstasyonu",neden:[["Kutu / sandık açılırken sürtme","Taşıma"],["Cihaz üzerine alet konması","Operatör"],["Sık açma-kapama","Proses"],["Parça çizik geldi","Tedarikçi"]]},
+  {id:"gocuk",ad:"Göçük / ezilme",grup:"Görsel",st:"Final Kontrol Test İstasyonu",neden:[["Taşıma / istifleme sırasında","Taşıma"],["Fason / tedarikçiden hatalı geldi","Tedarikçi"],["Montajda darbe","Operatör"]]},
+  {id:"kayit",ad:"Eksik test / kontrol kaydı",grup:"Dokümantasyon",st:"Isıtma-Soğutma Test İstasyonu",neden:[["Kayıt kâğıtta kalmış, dijitale aktarılmamış","Proses"],["Operatör kaydı atlamış","Operatör"]]},
+  {id:"diger",ad:"Diğer",grup:"Diğer",st:"",neden:[]}
+];
+var HTIP_BY = {}; HTIP.forEach(function (t) { HTIP_BY[t.id] = t; });
+var ERKOD = ["Er10","Er15","Er20","Er20.8","Er27","Er29","Er42"];
+function low(s) { return String(s || "").toLocaleLowerCase("tr"); }
+function suggestNcr(n) {
+  var x = low((n.hata || "") + " " + (n.duzeltme || "") + " " + (n.analiz || ""));
+  var out = { tip: "", kod: "", sinif: "", neden: "" };
+  var km = String(n.hata || "").match(/\ber\s?(\d+(?:\.\d+)?)/i) || x.match(/\ber\s?(\d+(?:\.\d+)?)/);
+  if (km) out.kod = "Er" + km[1];
+  var t = "";
+  if (/uvw/.test(x)) t = "uvw";
+  else if (/eksik gaz|gaz eksi|düşük üretim|dusuk uretim|gaz bas/.test(x)) t = "gaz_eksik";
+  else if (/kaçak|kacak/.test(x)) t = "gaz_kacak";
+  else if (/yeniden (gaz )?şarj|yeniden sarj/.test(x)) t = "gaz_eksik";
+  else if (/kaynak hata|yeniden kaynak|lehim/.test(x)) t = "kaynak";
+  else if (/sens[oö]r/.test(x)) t = "sensor";
+  else if (/ekran|dokunmatik|kart değiş|kart degis|arızalı kart/.test(x)) t = "kart";
+  else if (/pabuç|pabuc|temassız|temassiz|eksik kablo|kablo|klemens/.test(x)) t = "kablo";
+  else if (/çizik|cizik/.test(x)) t = "cizik";
+  else if (/göçük|gocuk|göçme|gocme|ezil/.test(x)) t = "gocuk";
+  else if (/kayıt|kayit/.test(x)) t = "kayit";
+  else if (/montaj|sıkış|sikis/.test(x)) t = "montaj";
+  out.tip = t;
+  var R = {
+    gaz_eksik: [[/tedarik/, 1], [/tüp|tup|boru/, 0], [/makine|kalibr/, 2], [/operat/, 3], [/kaçak|kacak/, 4]],
+    gaz_kacak: [[/kaynak hata|kaynak nokta|kaynaktan|lehim/, 0], [/rekor|havşa|havsa/, 1], [/valf|switch|parça|parca/, 2]],
+    kaynak: [[/operat/, 0], [/bps|parametre/, 1]],
+    uvw: [[/eksik/, 1], [/./, 0]],
+    kablo: [[/pabuç|pabuc|kopma|çatla|catla/, 2], [/temassız|temassiz|gevşek|gevsek/, 1], [/eksik kablo|takılacak|takilacak/, 0]],
+    sensor: [[/ters|yanlış|yanlis/, 0], [/yerinden|yeniden takıl|yeniden takil/, 1], [/değiştir|degistir|değişim|degisim/, 2], [/tedarik/, 3]],
+    kart: [[/tedarik/, 0]],
+    montaj: [[/operat|ekip|ekib/, 0], [/talimat/, 1]],
+    cizik: [[/sandık|sandik|sürt|surt/, 0], [/alet/, 1], [/sık aç|sik ac/, 2]],
+    gocuk: [[/fason|tedarik/, 1], [/taşıma|tasima/, 0]],
+    kayit: [[/dijital|kâğıt|kagit|check/, 0], [/operat/, 1]]
+  };
+  if (t && R[t]) { for (var i = 0; i < R[t].length; i++) { if (R[t][i][0].test(x)) { var nd = HTIP_BY[t].neden[R[t][i][1]]; out.neden = nd[0]; out.sinif = nd[1]; break; } } }
+  if (!out.sinif) { if (/operat/.test(x)) out.sinif = "Operatör"; else if (/tedarik|fason/.test(x)) out.sinif = "Tedarikçi"; else if (/taşıma|tasima/.test(x)) out.sinif = "Taşıma"; }
+  return out;
+}
+function applySug(n) {
+  var s = suggestNcr(n), ch = false;
+  if (!n.tip && s.tip) { n.tip = s.tip; ch = true; }
+  if (!n.kod && s.kod) { n.kod = s.kod; ch = true; }
+  if (!n.sinif && s.sinif) { n.sinif = s.sinif; ch = true; }
+  if (!n.neden && s.neden) { n.neden = s.neden; ch = true; }
+  if (!n.alinan && n.tip && HTIP_BY[n.tip] && HTIP_BY[n.tip].st) { n.alinan = HTIP_BY[n.tip].st; ch = true; }
+  return ch;
+}
+function suggestFire(r, f) {
+  var x = low((f.explanation || "") + " " + (f.code || ""));
+  if (/arızalı kart|arizali kart|\bkart\b/.test(x)) return "Tedarikçi";
+  var rel = (r.ncr || []).filter(function (n) { return n.sinif && (n.alinan === f.station || (HTIP_BY[n.tip] && HTIP_BY[n.tip].st === f.station)); });
+  if (rel.length) return rel[0].sinif;
+  if (/tüp|tup|kırık|kirik|çalışmıyor|calismiyor|sens[oö]r/.test(x)) return "Malzeme";
+  if ((r.ncr || []).length === 1 && r.ncr[0].sinif) return r.ncr[0].sinif;
+  if (/göç|goc|panjur|ezil/.test(x)) return "Taşıma";
+  return "";
+}
+function normStation(t) {
+  if (!t || CHK_STATIONS.indexOf(t) > -1) return t || "";
+  var x = low(t);
+  if (/gaz/.test(x)) return "Gaz Dolum İstasyonu";
+  if (/kaçak|kacak/.test(x)) return "Kaçak Test İstasyonu";
+  if (/final|paket/.test(x)) return "Final Kontrol Test İstasyonu";
+  if (/test|perf|ısıtma|isitma/.test(x)) return "Isıtma-Soğutma Test İstasyonu";
+  if (/pano/.test(x)) return "Pano Montaj Bölümü";
+  if (/masa.*kaynak/.test(x)) return "Masa Kaynak Bölümü";
+  if (/kaynak/.test(x)) return "Kaynak İstasyonu";
+  if (/elektrik/.test(x)) return "Elektrik Montaj";
+  if (/izol/.test(x)) return "İzolasyon";
+  if (/montaj/.test(x)) return "Montaj İstasyonu";
+  return t;
+}
+function normalizeAll() {
+  var ch = 0;
+  S.records.forEach(function (r) {
+    (r.fire || []).forEach(function (f) { var s = normStation(f.station); if (s !== f.station) { if (!f.stationRaw) f.stationRaw = f.station; f.station = s; ch++; } });
+    (r.ncr || []).forEach(function (n) { ["alinan", "farkedilen"].forEach(function (k) { var s = normStation(n[k]); if (s !== n[k]) { n[k] = s; ch++; } }); });
+  });
+  return ch;
+}
+function tipOpts(sel) {
+  var g = {}; HTIP.forEach(function (t) { (g[t.grup] = g[t.grup] || []).push(t); });
+  return '<option value="">Seçin</option>' + Object.keys(g).map(function (k) { return '<optgroup label="' + esc(k) + '">' + g[k].map(function (t) { return '<option value="' + t.id + '"' + (t.id === sel ? " selected" : "") + '>' + esc(t.ad) + '</option>'; }).join("") + '</optgroup>'; }).join("");
+}
+function sinifOpts(sel) { return '<option value="">Seçin</option>' + SINIF.map(function (s) { return '<option value="' + s[0] + '"' + (s[0] === sel ? " selected" : "") + '>' + esc(s[1]) + '</option>'; }).join(""); }
+function allNcr(recs) { var out = []; (recs || S.records).forEach(function (r) { (r.ncr || []).forEach(function (n) { out.push({ r: r, n: n }); }); }); return out; }
+function allFire(recs) { var out = []; (recs || S.records).forEach(function (r) { (r.fire || []).forEach(function (f, i) { out.push({ r: r, f: f, i: i }); }); }); return out; }
+function countBy(arr, fn) { var c = {}; arr.forEach(function (x) { var k = fn(x) || "Sınıflandırılmamış"; c[k] = (c[k] || 0) + 1; }); return c; }
+function barTable(c, total, labelFn, cls) {
+  var keys = Object.keys(c).sort(function (a, b) { return c[b] - c[a]; }); if (!keys.length) return '<div class="empty">Kayıt yok.</div>';
+  var mx = c[keys[0]];
+  return '<table class="tbl"><tbody>' + keys.map(function (k) { return '<tr><td' + (k === "Sınıflandırılmamış" ? ' class="muted"' : '') + '>' + esc(labelFn ? labelFn(k) : k) + '</td><td style="width:42%"><div class="bar ' + (k === "Sınıflandırılmamış" ? "ash" : (cls || "ash")) + '"><i style="width:' + pct(c[k], mx) + '%"></i></div></td><td class="num">' + c[k] + '</td><td class="num">%' + pct(c[k], total) + '</td></tr>'; }).join("") + '</tbody></table>';
+}
+function tipAd(id) { return id === "Sınıflandırılmamış" ? id : (HTIP_BY[id] ? HTIP_BY[id].ad : id); }
+function sinifAd(id) { return SINIF_AD[id] || id; }
+
+/* ---------------- HATA SINIFLANDIRMA görünümü ---------------- */
+function viewHatalar() {
+  var list = allNcr(), fires = allFire();
+  var shown = list.filter(function (x) {
+    if (ui.hf === "unc" && x.n.tip && x.n.sinif) return false;
+    if (ui.hf === "open" && x.n.durum === "Kapalı") return false;
+    if (ui.hs !== "all" && (x.n.sinif || "") !== ui.hs) return false;
+    return true;
+  });
+  var cls = list.filter(function (x) { return x.n.tip && x.n.sinif; }).length;
+  var pending = list.filter(function (x) { var s = suggestNcr(x.n); return (!x.n.tip && s.tip) || (!x.n.sinif && s.sinif) || (!x.n.kod && s.kod); }).length;
+  pending += fires.filter(function (x) { return !x.f.sinif && suggestFire(x.r, x.f); }).length;
+  var bySinif = countBy(list, function (x) { return x.n.sinif; }), byTip = countBy(list, function (x) { return x.n.tip; });
+  var byAl = countBy(list, function (x) { return x.n.alinan; }), byFk = countBy(list, function (x) { return x.n.farkedilen; });
+  var fBySinif = countBy(fires, function (x) { return x.f.sinif; });
+  var topS = Object.keys(bySinif).filter(function (k) { return k !== "Sınıflandırılmamış"; }).sort(function (a, b) { return bySinif[b] - bySinif[a]; })[0];
+  var fBtns = [["all", "Tümü"], ["unc", "Sınıflandırılmamış"], ["open", "Açık"]].map(function (p) { return '<button data-act="hf" data-v="' + p[0] + '" aria-pressed="' + (ui.hf === p[0]) + '">' + p[1] + '</button>'; }).join("");
+  var sBtns = [["all", "Tüm sınıflar"]].concat(SINIF.map(function (s) { return [s[0], s[0]]; })).map(function (p) { return '<button data-act="hs" data-v="' + p[0] + '" aria-pressed="' + (ui.hs === p[0]) + '">' + esc(p[1]) + '</button>'; }).join("");
+  var rows = shown.map(function (x) {
+    var n = x.n, r = x.r, s = suggestNcr(n), p = "gncr." + r.id + "." + n.id + ".";
+    var need = (!n.tip && s.tip) || (!n.sinif && s.sinif) || (!n.kod && s.kod);
+    var sugTxt = need ? [(!n.tip && s.tip) ? tipAd(s.tip) : "", (!n.sinif && s.sinif) ? s.sinif : "", (!n.kod && s.kod) ? s.kod : ""].filter(Boolean).join(", ") : "";
+    return '<tr><td><b>' + esc(r.serial || "—") + '</b><div class="small muted">' + esc(devLabel(r.deviceKey).replace("VARM UP ", "")) + ', ' + trDate(r.date) + '</div></td>' +
+      '<td style="min-width:180px">' + esc(n.hata || "—") + (n.analiz ? '<div class="small muted">' + esc(n.analiz) + '</div>' : "") + '</td>' +
+      '<td style="min-width:190px"><select class="in" data-f="' + p + 'tip" aria-label="Hata tipi">' + tipOpts(n.tip) + '</select></td>' +
+      '<td style="width:96px"><input class="in" list="erkod" value="' + esc(n.kod || "") + '" data-f="' + p + 'kod" aria-label="Cihaz hata kodu"></td>' +
+      '<td style="min-width:150px"><select class="in" data-f="' + p + 'sinif" aria-label="Kök neden sınıfı">' + sinifOpts(n.sinif) + '</select>' + (n.neden ? '<div class="small muted" style="margin-top:4px">' + esc(n.neden) + '</div>' : "") + '</td>' +
+      '<td style="min-width:150px">' + (need ? '<div class="small">' + esc(sugTxt) + '</div><button class="btn sm" style="margin-top:6px" data-act="sug1" data-r="' + r.id + '" data-id="' + n.id + '">Öneriyi uygula</button>' : '<span class="small muted">—</span>') + '</td>' +
+      '<td><button class="btn ghost sm" data-act="gotonc" data-r="' + r.id + '">Kart</button></td></tr>';
+  }).join("");
+  var fRows = fires.map(function (x) {
+    var f = x.f, r = x.r, p = "gfire." + r.id + "." + x.i + ".";
+    return '<tr><td><b>' + esc(r.serial || "—") + '</b><div class="small muted">' + esc(devLabel(r.deviceKey).replace("VARM UP ", "")) + '</div></td><td>' + esc(f.code) + '</td><td class="num">' + esc(f.qty) + '</td><td>' + esc(SHORT[f.station] || f.station || "—") + '</td><td>' + esc(f.explanation) + '</td><td style="min-width:150px"><select class="in" data-f="' + p + 'sinif" aria-label="Fire kök neden sınıfı">' + sinifOpts(f.sinif) + '</select>' + (!f.sinif && suggestFire(r, f) ? '<div class="small muted" style="margin-top:4px">Öneri: ' + esc(suggestFire(r, f)) + '</div>' : '') + '</td></tr>';
+  }).join("");
+  return '<datalist id="erkod">' + ERKOD.map(function (k) { return '<option value="' + k + '">'; }).join("") + '</datalist>' +
+    '<div class="between"><div><h1>Hata sınıflandırma</h1><p class="lead">Tüm kartlardaki uygunsuzlukları standart hata tipine ve kök neden sınıfına göre düzenleyin. Öneriler, kayıtlardaki hata, analiz ve düzeltme metinlerinden çıkarılır; uygulamadan önce kontrol edin.</p></div>' +
+    '<div class="row" style="margin-left:auto"><button class="btn" data-act="normst">İstasyon adlarını düzelt</button><button class="btn pri" data-act="printh">Hata raporu (PDF)</button></div></div>' +
+    '<div class="kpis" style="margin-bottom:16px">' + kpi(list.length, "Uygunsuzluk kaydı") + kpi(cls + " / " + list.length, "Sınıflandırılmış") + kpi(pending, "Uygulanabilir öneri", pending > 0) +
+      kpi(topS ? esc(topS) : "—", "En sık kök neden") + kpi(fires.length, "Fire kaydı") + kpi(fires.filter(function (x) { return !x.f.sinif; }).length, "Sınıfsız fire", fires.some(function (x) { return !x.f.sinif; })) + '</div>' +
+    (pending ? '<div class="panel" style="margin-bottom:16px"><div class="between" style="align-items:center"><p style="margin:0">' + pending + ' kayıt için öneri var. Yalnızca boş alanlar doldurulur, girdiğiniz değerler değişmez.</p><button class="btn pri" data-act="sugall">Tüm önerileri uygula</button></div></div>' : "") +
+    '<div class="grid2" style="margin-bottom:16px"><div class="panel"><h2>Kök neden sınıfına göre</h2>' + barTable(bySinif, list.length, sinifAd, "red") + '</div><div class="panel"><h2>Hata tipine göre</h2>' + barTable(byTip, list.length, tipAd) + '</div></div>' +
+    '<div class="grid2" style="margin-bottom:16px"><div class="panel"><h2>Hatanın oluştuğu istasyon</h2>' + barTable(byAl, list.length, function (k) { return SHORT[k] || k; }) + '</div><div class="panel"><h2>Fark edildiği istasyon</h2>' + barTable(byFk, list.length, function (k) { return SHORT[k] || k; }) + '</div></div>' +
+    '<div class="row" style="margin-bottom:12px"><div class="seg-btns">' + fBtns + '</div><div class="seg-btns">' + sBtns + '</div></div>' +
+    '<div class="panel scroll" style="margin-bottom:16px"><table class="tbl"><thead><tr><th>Seri</th><th>Kayıttaki hata</th><th>Standart hata tipi</th><th>Kod</th><th>Kök neden sınıfı</th><th>Öneri</th><th></th></tr></thead><tbody>' + (rows || '<tr><td colspan="7" class="empty">Bu filtreye uyan kayıt yok.</td></tr>') + '</tbody></table></div>' +
+    '<div class="panel"><div class="between"><h2>Fire kayıtları</h2></div>' + (fRows ? '<div class="scroll"><table class="tbl"><thead><tr><th>Seri</th><th>Malzeme</th><th class="num">Adet</th><th>İstasyon</th><th>Açıklama</th><th>Kök neden sınıfı</th></tr></thead><tbody>' + fRows + '</tbody></table></div><h3 style="margin-top:16px">Fire, kök neden sınıfına göre</h3>' + barTable(fBySinif, fires.length, sinifAd, "red") : '<div class="empty">Fire kaydı yok.</div>') + '</div>';
+}
+
+/* ---------------- Uygunsuzluk formu (kart içi) ---------------- */
+function viewNcr(r) {
+  var list = (r.ncr || []).map(function (n, i) {
+    var p = "ncr." + n.id + ".", t = HTIP_BY[n.tip], s = suggestNcr(n);
+    var need = (!n.tip && s.tip) || (!n.sinif && s.sinif) || (!n.kod && s.kod);
+    var sinifBtns = '<div class="seg-btns">' + SINIF.map(function (x) { return '<button data-act="ncrsinif" data-id="' + n.id + '" data-v="' + x[0] + '" aria-pressed="' + (n.sinif === x[0]) + '">' + esc(x[0]) + '</button>'; }).join("") + '</div>';
+    var nedenler = t && t.neden.length ? '<div><span class="lb">Olası nedenler (birini seçin, sınıf otomatik atanır)</span><div class="seg-btns">' + t.neden.map(function (nd, j) { return '<button data-act="ncrneden" data-id="' + n.id + '" data-i="' + j + '" aria-pressed="' + (n.neden === nd[0]) + '">' + esc(nd[0]) + ' <span class="muted" style="font-weight:500">· ' + esc(nd[1]) + '</span></button>'; }).join("") + '</div></div>' : "";
+    return '<div class="panel" style="margin-bottom:12px"><div class="between" style="margin-bottom:10px"><h3 style="margin:0">Uygunsuzluk ' + (i + 1) + (n.item ? ', madde ' + esc(n.item) : "") + '</h3><div class="row"><div class="seg-btns">' + ["Açık", "Kapalı"].map(function (d) { return '<button data-act="ncrdurum" data-id="' + n.id + '" data-v="' + d + '" aria-pressed="' + ((n.durum || "Açık") === d) + '">' + d + '</button>'; }).join("") + '</div><button class="btn danger sm" data-act="ncrdel" data-id="' + n.id + '">Sil</button></div></div>' +
+      (need ? '<div class="note" style="margin-bottom:12px">Öneri: ' + esc([(!n.tip && s.tip) ? tipAd(s.tip) : "", (!n.sinif && s.sinif) ? s.sinif : "", (!n.kod && s.kod) ? s.kod : ""].filter(Boolean).join(", ")) + ' <button class="btn sm" style="margin-left:8px" data-act="sug1" data-r="' + r.id + '" data-id="' + n.id + '">Uygula</button></div>' : "") +
+      '<div class="stack"><div class="grid2"><div><label class="lb">Standart hata tipi</label><select class="in" data-f="' + p + 'tip">' + tipOpts(n.tip) + '</select></div><div><label class="lb">Cihaz hata kodu (varsa)</label><input class="in" list="erkod" placeholder="Er20" value="' + esc(n.kod || "") + '" data-f="' + p + 'kod"></div></div>' +
+      '<div><label class="lb">Hata açıklaması</label><input class="in" value="' + esc(n.hata) + '" data-f="' + p + 'hata"></div>' +
+      '<div class="grid2"><div><label class="lb">Hatanın oluştuğu istasyon</label><select class="in" data-f="' + p + 'alinan">' + stOpts(n.alinan) + '</select></div><div><label class="lb">Fark edildiği istasyon</label><select class="in" data-f="' + p + 'farkedilen">' + stOpts(n.farkedilen) + '</select></div></div>' +
+      nedenler +
+      '<div><span class="lb">Kök neden sınıfı</span>' + sinifBtns + '</div>' +
+      '<div><label class="lb">Kök neden analizi</label><textarea class="in" data-f="' + p + 'analiz">' + esc(n.analiz) + '</textarea></div>' +
+      '<div><label class="lb">Düzeltme yöntemi ve önleyici faaliyet</label><textarea class="in" data-f="' + p + 'duzeltme">' + esc(n.duzeltme) + '</textarea></div></div></div>';
+  }).join("");
+  return '<datalist id="erkod">' + ERKOD.map(function (k) { return '<option value="' + k + '">'; }).join("") + '</datalist>' +
+    '<div class="toolbar"><button class="btn pri" data-act="ncradd">Uygunsuzluk kaydı ekle</button><span class="small muted">Uygun değil işaretlenen maddeden kayıt açmak için listede ilgili maddenin altındaki düğmeyi kullanın.</span></div>' + (list || '<div class="panel empty">Bu kartta uygunsuzluk kaydı yok.</div>');
+}
+function viewFire(r) {
+  var tot = 0;
+  var rows = (r.fire || []).map(function (f, i) {
+    tot += parseInt(String(f.qty).replace(/\D/g, ""), 10) || 0; var p = "fire." + i + ".";
+    return '<tr><td><input class="in" value="' + esc(f.code) + '" data-f="' + p + 'code" aria-label="Malzeme kodu"></td><td style="width:80px"><input class="in" inputmode="numeric" value="' + esc(f.qty) + '" data-f="' + p + 'qty" data-rr="1" aria-label="Adet"></td><td><select class="in" data-f="' + p + 'station" aria-label="İstasyon">' + stOpts(f.station) + '</select></td><td><select class="in" data-f="' + p + 'sinif" aria-label="Kök neden sınıfı">' + sinifOpts(f.sinif) + '</select></td><td><input class="in" value="' + esc(f.explanation) + '" data-f="' + p + 'explanation" aria-label="Açıklama"></td><td><button class="btn danger sm" data-act="firedel" data-i="' + i + '" aria-label="Satırı sil">Sil</button></td></tr>';
+  }).join("");
+  return '<div class="toolbar"><button class="btn pri" data-act="fireadd">Fire satırı ekle</button><span class="small muted">Toplam fire adedi: <b>' + tot + '</b></span></div>' +
+    (rows ? '<div class="panel scroll"><table class="tbl"><thead><tr><th>Malzeme kodu</th><th>Adet</th><th>İstasyon</th><th>Kök neden sınıfı</th><th>Açıklama</th><th></th></tr></thead><tbody>' + rows + '</tbody></table></div>' : '<div class="panel empty">Bu kartta fire kaydı yok.</div>');
+}
+
+/* ---------------- Hata raporu PDF ---------------- */
+function printHatalar() {
+  var list = allNcr(), fires = allFire(), N = list.length;
+  var fireQty = fires.reduce(function (a, x) { return a + (parseInt(String(x.f.qty).replace(/\D/g, ""), 10) || 0); }, 0);
+  function dist(c, total, lab) { var ks = Object.keys(c).sort(function (a, b) { return c[b] - c[a]; }); return '<table><thead><tr><th>' + lab + '</th><th class="c" style="width:60px">Adet</th><th class="c" style="width:60px">Oran</th></tr></thead><tbody>' + ks.map(function (k) { return '<tr><td>' + esc(k) + '</td><td class="c">' + c[k] + '</td><td class="c">%' + pct(c[k], total) + '</td></tr>'; }).join("") + '</tbody></table>'; }
+  var bs = countBy(list, function (x) { return sinifAd(x.n.sinif) === undefined ? "" : (x.n.sinif ? sinifAd(x.n.sinif) : ""); });
+  var bt = countBy(list, function (x) { return x.n.tip ? tipAd(x.n.tip) : ""; });
+  var ba = countBy(list, function (x) { return x.n.alinan; }), bf = countBy(list, function (x) { return x.n.farkedilen; });
+  var fs = countBy(fires, function (x) { return x.f.sinif ? sinifAd(x.f.sinif) : ""; });
+  var det = list.map(function (x, i) { var n = x.n, r = x.r; return '<tr><td class="c">' + (i + 1) + '</td><td>' + esc(devLabel(r.deviceKey).replace("VARM UP ", "")) + '</td><td class="c">' + trDate(r.date) + '</td><td class="c">' + esc(r.serial) + '</td><td>' + esc(n.tip ? tipAd(n.tip) : "—") + (n.hata ? '<br><i>' + esc(n.hata) + '</i>' : "") + '</td><td class="c">' + esc(n.kod || "") + '</td><td>' + esc(n.alinan || "") + '</td><td>' + esc(n.farkedilen || "") + '</td><td>' + esc(n.sinif ? sinifAd(n.sinif) : "—") + (n.neden ? '<br><i>' + esc(n.neden) + '</i>' : "") + '</td><td>' + esc(n.analiz || "") + '</td><td>' + esc(n.duzeltme || "") + '</td></tr>'; }).join("");
+  var fdet = fires.map(function (x, i) { var f = x.f, r = x.r; return '<tr><td class="c">' + (i + 1) + '</td><td>' + esc(devLabel(r.deviceKey).replace("VARM UP ", "")) + '</td><td class="c">' + trDate(r.date) + '</td><td class="c">' + esc(r.serial) + '</td><td class="c">' + esc(f.code) + '</td><td class="c">' + esc(f.qty) + '</td><td>' + esc(f.station) + '</td><td>' + esc(f.sinif ? sinifAd(f.sinif) : "—") + '</td><td>' + esc(f.explanation) + '</td></tr>'; }).join("");
+  var html = '<!doctype html><html><head><meta charset="utf-8"><title>Hata Analiz Raporu</title><style>' + PCSS + '.cols{display:flex;gap:8px}.cols>div{flex:1}</style></head><body><div class="sheet">' +
+    phead("HATA VE FİRE ANALİZ RAPORU", "FR-064-R", "16.07.2026") +
+    '<table style="margin-top:6px"><tr><th>Uygunsuzluk kaydı</th><td>' + N + '</td><th>Sınıflandırılmış</th><td>' + list.filter(function (x) { return x.n.tip && x.n.sinif; }).length + '</td><th>Fire kaydı / adedi</th><td>' + fires.length + ' / ' + fireQty + '</td><th>Rapor tarihi</th><td>' + trDate(today()) + '</td></tr></table>' +
+    '<h2>1. Kök neden ve hata tipi dağılımı</h2><div class="cols"><div>' + dist(bs, N, "Kök neden sınıfı") + '</div><div>' + dist(bt, N, "Standart hata tipi") + '</div></div>' +
+    '<h2>2. Oluştuğu ve fark edildiği istasyon</h2><div class="cols"><div>' + dist(ba, N, "Hatanın oluştuğu istasyon") + '</div><div>' + dist(bf, N, "Fark edildiği istasyon") + '</div></div>' +
+    '<h2>3. Uygunsuzluk kayıtları</h2><table><thead><tr><th>#</th><th>Model</th><th>Tarih</th><th>Seri</th><th>Hata tipi / açıklama</th><th>Kod</th><th>Oluştuğu ist.</th><th>Fark edilen ist.</th><th>Kök neden</th><th>Analiz</th><th>Düzeltme</th></tr></thead><tbody>' + (det || '<tr><td colspan="11" class="c">Kayıt yok</td></tr>') + '</tbody></table>' +
+    '<h2>4. Fire / ıskarta</h2>' + dist(fs, fires.length, "Fire kök neden sınıfı") + '<table style="margin-top:4px"><thead><tr><th>#</th><th>Model</th><th>Tarih</th><th>Seri</th><th>Malzeme</th><th>Adet</th><th>İstasyon</th><th>Kök neden</th><th>Açıklama</th></tr></thead><tbody>' + (fdet || '<tr><td colspan="9" class="c">Kayıt yok</td></tr>') + '</tbody></table>' +
+    '<p style="font-size:8.5px;margin-top:6px">Kök neden sınıfları 6M (insan, makine, malzeme, yöntem, ölçüm, çevre) yaklaşımına tedarikçi, taşıma ve tasarım eklenerek oluşturulmuştur.</p></div></body></html>';
+  openPrint(html);
+}
+
+/* ---------------- LİSTE ANALİZİ ---------------- */
+function analysisData() {
+  var items = itemsFor("16kW").filter(function (x) { return !x.rec; });
+  var catC = {}, critC = { K: 0, M: 0, m: 0 }, devSpecific = 0;
+  items.forEach(function (it) { catC[it.cat] = (catC[it.cat] || 0) + 1; critC[it.crit]++; });
+  var keys = CHK_DEVICES.map(function (d) { return d.key; });
+  CHK_CATALOG["16kW"].items.forEach(function (it, i) { var vals = keys.map(function (k) { var x = CHK_CATALOG[k].items[i]; return x.m + "|" + x.k; }); if (new Set(vals).size > 1) devSpecific++; });
+  var numeric = items.filter(function (it) { return /\d/.test(it.k) && /(bar|mpa|gram|kw)/i.test(it.k); }).length;
+  var stC = {}; items.forEach(function (it) { stC[it.st] = (stC[it.st] || 0) + 1; });
+  return { items: items, catC: catC, critC: critC, devSpecific: devSpecific, numeric: numeric, stC: stC, n: items.length };
+}
+function viewAnaliz() {
+  var A = analysisData(), n = A.n;
+  var catBars = Object.keys(CAT).filter(function (k) { return A.catC[k]; }).sort(function (a, b) { return A.catC[b] - A.catC[a]; }).map(function (k) { return '<tr><td>' + CAT[k] + '</td><td style="width:45%"><div class="bar ash"><i style="width:' + pct(A.catC[k], n) + '%"></i></div></td><td class="num">' + A.catC[k] + '</td><td class="num">%' + pct(A.catC[k], n) + '</td></tr>'; }).join("");
+  var stBars = CHK_STATIONS.map(function (s) { return '<tr><td>' + esc(s) + '</td><td style="width:45%"><div class="bar ash"><i style="width:' + pct(A.stC[s] || 0, 13) + '%"></i></div></td><td class="num">' + (A.stC[s] || 0) + '</td></tr>'; }).join("");
+  var clsRows = A.items.map(function (it) { return '<tr><td class="muted">' + esc(it.no) + '</td><td>' + esc(it.p) + '<div class="small muted">' + esc(SHORT[it.st]) + '</div></td><td>' + CAT[it.cat] + '</td><td><span class="chip ' + it.crit + '">' + CRIT[it.crit] + '</span></td><td>' + (FLAG[it.no] ? '<span class="chip bad">' + esc(FLAG[it.no]) + '</span>' : '<span class="small muted">—</span>') + '</td></tr>'; }).join("");
+  var issues = ISSUES.map(function (x) { return '<div class="issue"><h3>' + esc(x.t) + ' <span class="chip">Madde ' + esc(x.no) + '</span></h3><p class="muted" style="margin:0">' + esc(x.d) + '</p></div>'; }).join("");
+  var bench = BENCH.map(function (b) { return '<tr><td><b>' + esc(b[0]) + '</b></td><td>' + esc(b[1]) + '</td><td>' + esc(b[2]) + '</td><td>' + esc(b[3]) + '</td></tr>'; }).join("");
+  var recRows = REC.map(function (x) { return '<tr><td class="muted">' + x.no + '</td><td>' + esc(x.p) + '</td><td>' + esc(SHORT[x.st]) + '</td><td>' + CAT[x.cat] + '</td><td><span class="chip ' + x.crit + '">' + CRIT[x.crit] + '</span></td></tr>'; }).join("");
+  return '<div class="between"><div><h1>Kontrol listesi analizi</h1><p class="lead">FR-063 kontrol kartlarının (8, 13, 16 ve 18 kW) madde madde incelemesi, sınıflandırması ve sektör uygulamalarıyla karşılaştırması.</p></div><button class="btn" data-act="printan">Analiz raporunu yazdır (PDF)</button></div>' +
+    '<div class="kpis" style="margin-bottom:16px">' + kpi(n, "Madde (No 15 yok)") + kpi(CHK_STATIONS.length, "İstasyon") + kpi(A.devSpecific + " (%" + pct(A.devSpecific, n) + ")", "Modele özel madde") + kpi(A.critC.K, "Kritik madde") + kpi(n - A.numeric, "Nitel kriter (var/yok)") + kpi(ISSUES.length, "Tespit edilen sorun", true) + '</div>' +
+    '<div class="panel" style="margin-bottom:16px"><h2>Genel değerlendirme</h2><p>Liste üretim akışını istasyon sırasıyla izleyen, iki aşamalı (operatör ve QC) onaylı sağlam bir temel üzerine kurulu. Maddelerin %' + pct(A.catC.KOD, n) + '\'ü parça kodu doğrulaması, %' + pct(A.catC.KONUM, n) + '\'u konum / yön kontrolü; ikisi birlikte %' + pct(A.catC.KOD + A.catC.KONUM, n) + '. Yani liste asıl olarak <b>yanlış parça ve yanlış montaj</b> hatalarını yakalamaya odaklı.</p><p>Zayıf yön ölçülebilirlik: ' + (n - A.numeric) + ' maddenin kriteri var/yok veya doğru/yanlış türünde; yalnızca ' + A.numeric + ' maddede sayısal bir hedef var ve bunlarda da tolerans ile ölçülen değerin kaydı yok. Sızdırmazlık, vakum ve elektriksel güvenlik gibi ısı pompası üretiminde sektörde standart kabul edilen kontroller ya eksik ya da tanımsız.</p></div>' +
+    '<div class="grid2" style="margin-bottom:16px"><div class="panel"><h2>Kontrol türüne göre</h2><table class="tbl"><tbody>' + catBars + '</tbody></table></div><div class="panel"><h2>Kritikliğe göre</h2><table class="tbl"><tbody>' + ["K", "M", "m"].map(function (k) { return '<tr><td><span class="chip ' + k + '">' + CRIT[k] + '</span></td><td style="width:50%"><div class="bar' + (k === "K" ? " red" : " ash") + '"><i style="width:' + pct(A.critC[k], n) + '%"></i></div></td><td class="num">' + A.critC[k] + '</td></tr>'; }).join("") + '</tbody></table><p class="small muted" style="margin-top:10px">Kritik: güvenlik veya temel fonksiyonu etkiler, uygunsuzlukta ürün bekletilir. Majör: performans veya güvenilirliği etkiler. Minör: görünüm ve ambalaj.</p><h2 style="margin-top:18px">İstasyonlara göre madde sayısı</h2><table class="tbl"><tbody>' + stBars + '</tbody></table></div></div>' +
+    '<div class="panel" style="margin-bottom:16px"><h2>Güçlü yönler</h2><ul style="margin:0;padding-left:20px">' + STRENGTHS.map(function (s) { return '<li style="margin-bottom:6px">' + esc(s) + '</li>'; }).join("") + '</ul></div>' +
+    '<div class="panel" style="margin-bottom:16px"><h2>Tespit edilen sorunlar</h2>' + issues + '</div>' +
+    '<div class="panel" style="margin-bottom:16px"><h2>Sektör uygulamalarıyla karşılaştırma</h2><div class="scroll"><table class="tbl"><thead><tr><th style="width:14%">Konu</th><th>Mevcut liste</th><th>Sektörde iyi uygulama / standart</th><th>Bu uygulamada</th></tr></thead><tbody>' + bench + '</tbody></table></div><p class="small muted" style="margin-top:10px">Standart atıfları genel çerçeve içindir; test değerleri ve limitler ürün spesifikasyonu ile ilgili standardın güncel baskısından teyit edilmelidir.</p></div>' +
+    '<div class="panel" style="margin-bottom:16px"><h2>Önerilen yeni maddeler</h2><p class="muted">Bu maddeler kontrol listesinde "Önerilen yeni madde" etiketiyle görünür; Veri ve ayarlar sayfasından kapatılabilir.</p><div class="scroll"><table class="tbl"><thead><tr><th>No</th><th>Madde</th><th>İstasyon</th><th>Tür</th><th>Kritiklik</th></tr></thead><tbody>' + recRows + '</tbody></table></div></div>' +
+    '<div class="panel"><h2>Madde bazında sınıflandırma</h2><div class="scroll"><table class="tbl"><thead><tr><th>No</th><th>Madde</th><th>Tür</th><th>Kritiklik</th><th>Analiz notu</th></tr></thead><tbody>' + clsRows + '</tbody></table></div></div>';
+}
+
+/* ---------------- VERİ VE AYARLAR ---------------- */
+function viewVeri() {
+  var s = S.settings;
+  return '<h1>Veri ve ayarlar</h1><p class="lead">' + (cloud.user ? 'Veriler bulutta saklanır; yine de ayda bir yedek dosyası indirmeniz önerilir.' : 'Veriler şu an yalnızca bu cihazdaki tarayıcıda. Bulut bağlantısını aşağıdan kurun.') + '</p>' + cloudPanel() + '' +
+    '<div class="grid2"><div class="panel"><h2>Yedek</h2><p class="muted">' + S.records.length + ' kontrol kartı kayıtlı.</p><div class="row"><button class="btn pri" data-act="export">Yedeği indir (JSON)</button><button class="btn" data-act="import">Yedekten geri yükle</button></div>' +
+    '<h2 style="margin-top:20px">Note Loop\'tan aktar</h2><p class="muted">Note Loop uygulamasındaki Check List kayıtlarını (işaretler, gaz/kW değerleri, hatalar ve fire) bu programa taşır. Aynı kayıt iki kez eklenmez.</p><div class="row"><button class="btn" data-act="nlocal">Bu tarayıcıdaki Note Loop verisinden</button><button class="btn" data-act="import">Note Loop yedek dosyasından</button></div></div>' +
+    '<div class="panel"><h2>Değerlendirme ayarları</h2><div class="stack">' +
+    '<div><label class="lb" for="sgas">Gaz şarj toleransı (±%)</label><input id="sgas" class="in" type="number" step="0.5" value="' + s.gasTol + '" data-f="set.gasTol" data-rr="1"></div>' +
+    '<div><label class="lb" for="sperf">Isıtma kapasitesi alt sınırı (nominalin %... altı)</label><input id="sperf" class="in" type="number" step="1" value="' + s.perfTol + '" data-f="set.perfTol" data-rr="1"></div>' +
+    '<p class="small muted">Varsayılan değerler başlangıç içindir; ürün spesifikasyonuna göre güncelleyin.</p>' +
+    '<label class="row" style="cursor:pointer"><input type="checkbox" data-act="togrec"' + (s.showRec ? " checked" : "") + '> Önerilen yeni maddeleri kontrol listesinde göster</label></div></div></div>' +
+    (window.__QC_SEED ? '<div class="panel" style="margin-top:16px"><h2>Dosyaya gömülü veri</h2><p class="muted">Bu dosyada ' + window.__QC_SEED.records.length + ' kontrol kartı gömülü (yedek tarihi ' + window.__QC_SEED_DATE + '). Tarayıcıdaki veri boşsa otomatik yüklenir. Mevcut verinin yerine yeniden yüklemek için:</p><button class="btn" data-act="seedload">Gömülü veriyi yükle</button></div>' : '') + '<div class="panel" style="margin-top:16px"><h2>Tüm verileri sil</h2><p class="muted">Bu işlem geri alınamaz. Önce yedek alın.</p><button class="btn danger" data-act="wipe">Tüm kontrol kartlarını sil</button></div>' +
+    '<input type="file" id="fileIn" accept=".json,application/json" style="display:none">';
+}
+
+/* ---------------- PDF ---------------- */
+var PCSS = "*{box-sizing:border-box}body{font-family:Arial,Helvetica,sans-serif;color:#111;margin:0;font-size:10px}" +
+  ".sheet{padding:14mm 12mm}table{width:100%;border-collapse:collapse}td,th{border:1px solid #000;padding:3px 5px;vertical-align:middle}" +
+  "th{background:#f1f1f1;text-align:left;font-weight:700}.c{text-align:center}.r{text-align:right}" +
+  ".hd td{border:1px solid #000}.vm{text-align:center;width:150px}.vm b{display:block;color:#C8102E;font-size:21px;font-weight:900;letter-spacing:.5px;font-family:'Arial Black',Arial}.vm span{display:block;color:#555;font-size:8px;letter-spacing:5px;margin-top:1px}" +
+  ".ttl{text-align:center;font-size:13px;font-weight:700}.meta{font-size:8px}.meta td{padding:1.5px 4px}" +
+  ".st{writing-mode:vertical-rl;transform:rotate(180deg);text-align:center;font-weight:700;font-size:8.5px;white-space:nowrap;width:22px}" +
+  ".ok{color:#137a2e;font-weight:700}.nok{color:#C8102E;font-weight:700}.na{color:#555}h2{font-size:11px;margin:12px 0 4px;text-transform:none}" +
+  ".badge{display:inline-block;padding:2px 8px;border:1px solid #000;font-weight:700}.hold{background:#C8102E;color:#fff;border-color:#C8102E}" +
+  "@media print{.sheet{padding:8mm}tr{page-break-inside:avoid}}";
+function phead(title, doc, issued) {
+  return '<table class="hd"><tr><td class="vm"><b>VARMEKS</b><span>HEAT PUMPS</span></td><td class="ttl">' + esc(title) + '</td><td style="width:190px;padding:0"><table class="meta"><tr><th>Doküman No</th><td class="c">' + esc(doc) + '</td></tr><tr><th>Yayın Tarihi</th><td class="c">' + esc(issued) + '</td></tr><tr><th>Revizyon No</th><td class="c">1</td></tr><tr><th>Revizyon Tarihi</th><td class="c">' + trDate(today()) + '</td></tr><tr><th>Sayfa No</th><td class="c">1</td></tr></table></td></tr></table>';
+}
+function markTxt(v) { return v === "OK" ? '<span class="ok">✓</span>' : v === "NOK" ? '<span class="nok">✗</span>' : v === "NA" ? '<span class="na">N/A</span>' : "☐"; }
+function printRec(r) {
+  var e = evalRec(r), items = e.items, rows = "", last = null;
+  items.forEach(function (it) {
+    var m = r.marks[it.no] || {}, stc = "";
+    if (it.st !== last) { stc = '<td class="st" rowspan="' + items.filter(function (x) { return x.st === it.st; }).length + '">' + esc(it.st) + '</td>'; last = it.st; }
+    rows += '<tr>' + stc + '<td class="c">' + esc(it.no) + '</td><td>' + esc(it.p) + (it.rec ? " <i>(önerilen)</i>" : "") + '</td><td class="c">' + it.crit + '</td><td class="c">' + esc(it.m) + '</td><td>' + esc(it.k) + '</td><td class="c">' + esc(m.val ? m.val + " " + MEAS[it.no].u : "") + '</td><td class="c">' + markTxt(m.op) + '</td><td class="c">' + markTxt(m.qc) + '</td></tr>';
+  });
+  var ncr = (r.ncr || []).map(function (n, i) { return '<tr><td class="c">' + (i + 1) + '</td><td class="c">' + esc(n.item || "") + '</td><td>' + esc(n.hata) + '</td><td>' + esc(n.alinan) + '</td><td>' + esc(n.farkedilen) + '</td><td>' + esc(n.analiz) + '</td><td>' + esc(n.duzeltme) + '</td><td class="c">' + esc(n.durum || "Açık") + '</td></tr>'; }).join("");
+  var fire = (r.fire || []).map(function (f) { return '<tr><td>' + esc(f.code) + '</td><td class="c">' + esc(f.qty) + '</td><td>' + esc(f.station) + '</td><td>' + esc(f.explanation) + '</td></tr>'; }).join("");
+  var html = '<!doctype html><html><head><meta charset="utf-8"><title>Kontrol Kartı ' + esc(r.serial) + '</title><style>' + PCSS + '</style></head><body><div class="sheet">' +
+    phead("KONTROL KARTI " + devLabel(r.deviceKey), devDoc(r.deviceKey), "13.03.2026") +
+    '<table style="margin-top:6px"><tr><th style="width:18%">İş Emri No</th><td>' + esc(r.workOrder) + '</td><th style="width:18%">Model</th><td>' + esc((CHK_CATALOG[r.deviceKey] || {}).model) + '</td></tr>' +
+    '<tr><th>Seri No</th><td><b>' + esc(r.serial) + '</b></td><th>Tarih</th><td>' + trDate(r.date) + '</td></tr>' +
+    '<tr><th>Operatör</th><td>' + esc(r.operator) + '</td><th>Kalite Kontrol</th><td>' + esc(r.qc) + '</td></tr>' +
+    '<tr><th>Sonuç</th><td colspan="3"><span class="badge' + (e.status === "hold" ? " hold" : "") + '">' + STATUS[e.status] + '</span> &nbsp; ' + e.done + '/' + e.total + ' onay' + (e.nok.length ? ', ' + e.nok.length + ' uygunsuz madde' : "") + '</td></tr></table>' +
+    '<table style="margin-top:6px"><thead><tr><th>İstasyon</th><th class="c">No</th><th>Kontrol Parametresi</th><th class="c">Krit.</th><th class="c">Mamul</th><th>Kriter</th><th class="c">Ölçülen</th><th class="c">Operatör</th><th class="c">QC</th></tr></thead><tbody>' + rows + '</tbody></table>' +
+    '<p style="font-size:8px;margin:4px 0">Kritiklik: K = Kritik (uygunsuzlukta sevk edilmez), M = Majör, m = Minör. ✓ Uygun, ✗ Uygun değil, N/A Uygulanamaz.</p>' +
+    (ncr ? '<h2>Uygunsuzluk kayıtları</h2><table><thead><tr><th>#</th><th>Madde</th><th>Hata</th><th>Oluştuğu ist.</th><th>Fark edilen ist.</th><th>Kök neden</th><th>Düzeltme</th><th>Durum</th></tr></thead><tbody>' + ncr + '</tbody></table>' : "") +
+    (fire ? '<h2>Fire / ıskarta</h2><table><thead><tr><th>Malzeme Kodu</th><th>Adet</th><th>İstasyon</th><th>Açıklama</th></tr></thead><tbody>' + fire + '</tbody></table>' : "") +
+    '<table style="margin-top:14px"><tr><th class="c">Operatör</th><th class="c">Kalite Kontrol</th><th class="c">Üretim Sorumlusu</th></tr><tr><td style="height:46px"></td><td></td><td></td></tr><tr><td class="c">Ad Soyad / İmza / Tarih</td><td class="c">Ad Soyad / İmza / Tarih</td><td class="c">Ad Soyad / İmza / Tarih</td></tr></table>' +
+    '</div></body></html>';
+  openPrint(html);
+}
+function printAnaliz() {
+  var A = analysisData();
+  var html = '<!doctype html><html><head><meta charset="utf-8"><title>Kontrol Listesi Analiz Raporu</title><style>' + PCSS + 'p{font-size:10px;line-height:1.45;margin:4px 0}</style></head><body><div class="sheet">' +
+    phead("KONTROL LİSTESİ ANALİZ RAPORU", "FR-063-A", trDate(today())) +
+    '<h2>1. Özet</h2><table><tr><th>Madde</th><td>' + A.n + ' (No 15 yok)</td><th>İstasyon</th><td>' + CHK_STATIONS.length + '</td></tr><tr><th>Modele özel madde</th><td>' + A.devSpecific + ' (%' + pct(A.devSpecific, A.n) + ')</td><th>Kritik madde</th><td>' + A.critC.K + '</td></tr><tr><th>Nitel kriter</th><td>' + (A.n - A.numeric) + '</td><th>Tespit edilen sorun</th><td>' + ISSUES.length + '</td></tr></table>' +
+    '<p>Liste üretim akışını istasyon sırasıyla izleyen ve iki aşamalı (operatör ve QC) onay içeren sağlam bir yapıya sahiptir; ağırlıklı olarak yanlış parça ve yanlış montaj hatalarını yakalamaya odaklıdır. Zayıf yönü ölçülebilirliktir: kriterlerin çoğu var/yok türündedir, sayısal hedeflerde tolerans ve ölçüm kaydı yoktur; sızdırmazlık, vakum ve elektriksel güvenlik kontrolleri eksik veya tanımsızdır.</p>' +
+    '<h2>2. Sınıflandırma</h2><table><thead><tr><th>Kontrol türü</th><th class="c">Adet</th><th class="c">Oran</th></tr></thead><tbody>' + Object.keys(CAT).filter(function (k) { return A.catC[k]; }).map(function (k) { return '<tr><td>' + CAT[k] + '</td><td class="c">' + A.catC[k] + '</td><td class="c">%' + pct(A.catC[k], A.n) + '</td></tr>'; }).join("") + '</tbody></table>' +
+    '<table style="margin-top:4px"><thead><tr><th>Kritiklik</th><th class="c">Adet</th></tr></thead><tbody>' + ["K", "M", "m"].map(function (k) { return '<tr><td>' + CRIT[k] + '</td><td class="c">' + A.critC[k] + '</td></tr>'; }).join("") + '</tbody></table>' +
+    '<h2>3. Güçlü yönler</h2>' + STRENGTHS.map(function (s) { return '<p>• ' + esc(s) + '</p>'; }).join("") +
+    '<h2>4. Tespit edilen sorunlar</h2><table><thead><tr><th style="width:12%">Madde</th><th style="width:20%">Konu</th><th>Açıklama</th></tr></thead><tbody>' + ISSUES.map(function (x) { return '<tr><td class="c">' + esc(x.no) + '</td><td>' + esc(x.t) + '</td><td>' + esc(x.d) + '</td></tr>'; }).join("") + '</tbody></table>' +
+    '<h2>5. Sektör uygulamalarıyla karşılaştırma</h2><table><thead><tr><th>Konu</th><th>Mevcut liste</th><th>İyi uygulama / standart</th><th>Öneri</th></tr></thead><tbody>' + BENCH.map(function (b) { return '<tr><td><b>' + esc(b[0]) + '</b></td><td>' + esc(b[1]) + '</td><td>' + esc(b[2]) + '</td><td>' + esc(b[3]) + '</td></tr>'; }).join("") + '</tbody></table>' +
+    '<p style="font-size:8.5px">Standart atıfları genel çerçeve içindir; test değerleri ve limitler ürün spesifikasyonu ve ilgili standardın güncel baskısından teyit edilmelidir.</p>' +
+    '<h2>6. Önerilen yeni maddeler</h2><table><thead><tr><th>No</th><th>Madde</th><th>İstasyon</th><th>Kriter</th><th class="c">Krit.</th></tr></thead><tbody>' + REC.map(function (x) { return '<tr><td class="c">' + x.no + '</td><td>' + esc(x.p) + '</td><td>' + esc(x.st) + '</td><td>' + esc(x.k) + '</td><td class="c">' + x.crit + '</td></tr>'; }).join("") + '</tbody></table>' +
+    '<h2>7. Madde bazında sınıflandırma</h2><table><thead><tr><th class="c">No</th><th>Madde</th><th>İstasyon</th><th>Tür</th><th class="c">Krit.</th><th>Not</th></tr></thead><tbody>' + A.items.map(function (it) { return '<tr><td class="c">' + it.no + '</td><td>' + esc(it.p) + '</td><td>' + esc(SHORT[it.st]) + '</td><td>' + CAT[it.cat] + '</td><td class="c">' + it.crit + '</td><td>' + esc(FLAG[it.no] || "") + '</td></tr>'; }).join("") + '</tbody></table>' +
+    '</div></body></html>';
+  openPrint(html);
+}
+function openPrint(html) {
+  var w = null; try { w = window.open("", "_blank"); } catch (e) {}
+  if (w && w.document) { w.document.open(); w.document.write(html); w.document.close(); setTimeout(function () { try { w.focus(); w.print(); } catch (e) {} }, 400); return; }
+  var f = document.createElement("iframe"); f.style.cssText = "position:fixed;right:0;bottom:0;width:0;height:0;border:0"; document.body.appendChild(f);
+  f.contentDocument.open(); f.contentDocument.write(html); f.contentDocument.close();
+  setTimeout(function () { try { f.contentWindow.focus(); f.contentWindow.print(); } catch (e) {} setTimeout(function () { f.remove(); }, 3000); }, 400);
+}
+
+/* ---------------- içe / dışa aktarma ---------------- */
+function download(name, text) {
+  try {
+    var blob = new Blob([text], { type: "application/json" });
+    if (window.navigator && window.navigator.msSaveOrOpenBlob) { window.navigator.msSaveOrOpenBlob(blob, name); return; }
+    var a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = name; document.body.appendChild(a); a.click();
+    setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 800);
+  } catch (e) { var w = window.open(""); if (w) { w.document.write("<textarea style='width:100%;height:95vh'>" + esc(text) + "</textarea>"); } }
+}
+function conv(v) { return v === "U" ? "OK" : v === "UD" ? "NOK" : v === "NA" ? "NA" : ""; }
+function fromNoteLoop(data) {
+  var list = (data && data.checklists) || [], have = {}, added = 0;
+  S.records.forEach(function (r) { have[r.id] = 1; });
+  list.forEach(function (c) {
+    var id = "nl_" + (c.id || uid()); if (have[id]) return;
+    var marks = {};
+    Object.keys(c.marks || {}).forEach(function (no) { var m = c.marks[no] || {}; marks[no] = { op: conv(m.op), qc: conv(m.qc) }; });
+    function setVal(no, v) { if (v !== undefined && v !== null && v !== "") { marks[no] = Object.assign({}, marks[no] || {}, { val: String(v) }); } }
+    setVal("33", c.gasGram); setVal("41", c.heatKw); setVal("42", c.coolKw);
+    S.records.push({ id: id, deviceKey: c.deviceKey, date: c.date || "", serial: c.serial || "", workOrder: c.workOrder || "", operator: c.operatorName || "", qc: c.qcName || "", batch: c.batch || "", seq: c.seq || 0, marks: marks,
+      ncr: (c.errors || []).map(function (e) { return { id: uid(), item: "", hata: e.hata || "", alinan: e.alinan || "", farkedilen: e.farkedilen || "", analiz: e.analiz || "", duzeltme: e.duzeltme || "", durum: "Açık" }; })
+        .concat(((c.fire && c.fire.solutions) || []).filter(function (x) { return x.error || x.solution; }).map(function (x) { return { id: uid(), item: "", hata: x.error || "", alinan: "", farkedilen: "", analiz: "", duzeltme: x.solution || "", durum: "Kapalı" }; })),
+      fire: ((c.fire && c.fire.rows) || []).filter(function (x) { return x.code || x.qty || x.station || x.explanation; }).map(function (x) { return { code: x.code || "", qty: x.qty || "", station: x.station || "", explanation: x.explanation || "" }; }),
+      createdAt: c.createdAt || Date.now() });
+    added++;
+  });
+  S.records.sort(function (a, b) { return (b.createdAt || 0) - (a.createdAt || 0); });
+  normalizeAll(); save(); return added;
+}
+function nlPending() {
+  var raw = null; try { raw = localStorage.getItem("vrm-tracker-v2"); } catch (e) { return 0; }
+  if (!raw) return 0; var o; try { o = JSON.parse(raw); } catch (e) { return 0; }
+  var have = {}; S.records.forEach(function (r) { have[r.id] = 1; });
+  return ((o && o.checklists) || []).filter(function (c) { return !have["nl_" + c.id]; }).length;
+}
+function nlBanner() {
+  var n = nlPending(); if (!n) return "";
+  return '<div class="panel" style="margin-bottom:16px;border-color:#5d6369"><div class="between" style="align-items:center"><div><h2 style="margin:0 0 4px">Note Loop\'ta ' + n + ' kontrol kartı bulundu</h2><p class="muted" style="margin:0">İşaretler, gaz ve kW değerleri, hatalar ve fire kayıtlarıyla birlikte bu programa aktarılabilir. Note Loop\'taki veriler silinmez.</p></div><button class="btn pri" data-act="nlocal">' + n + ' kartı aktar</button></div></div>';
+}
+function importText(txt) {
+  var o; try { o = JSON.parse(txt); } catch (e) { toast("Dosya okunamadı: geçerli bir JSON değil."); return; }
+  if (o && o.records) {
+    if (cloud.user) {
+      if (!confirm("Yedekteki " + o.records.length + " kart buluta eklensin mi? Aynı kayıt varsa yedektekiyle güncellenir, diğer kartlara dokunulmaz.")) return;
+      var byId = {}; S.records.forEach(function (r, i) { byId[r.id] = i; });
+      o.records.forEach(function (r) { if (!r.id) r.id = uid(); if (byId[r.id] != null) S.records[byId[r.id]] = r; else S.records.push(r); });
+      normalizeAll(); save(); toast(o.records.length + " kart buluta aktarılıyor."); render(); return;
+    }
+    if (!confirm("Yedek geri yüklensin mi? Mevcut " + S.records.length + " kart yedektekilerle değiştirilecek.")) return;
+    S = { records: o.records, settings: Object.assign({}, DEF.settings, o.settings || {}) }; save(); toast(S.records.length + " kart geri yüklendi."); render(); return;
+  }
+  if (o && o.checklists) { var n = fromNoteLoop(o); toast(n ? n + " kart Note Loop'tan aktarıldı." : "Aktarılacak yeni kart bulunamadı."); if (n) { ui.view = "kontrol"; ui.rec = null; } render(); return; }
+  toast("Bu dosyada kontrol kartı verisi bulunamadı.");
+}
+
+/* ---------------- olaylar ---------------- */
+function setField(path, val) {
+  var p = path.split("."), r = curRec();
+  if (p[0] === "rec" && r) r[p[1]] = val;
+  else if (p[0] === "val" && r) { r.marks[p[1]] = Object.assign({}, r.marks[p[1]] || {}, { val: val }); }
+  else if (p[0] === "ncr" && r) { var n = (r.ncr || []).find(function (x) { return x.id === p[1]; }); if (n) { n[p[2]] = val; if (p[2] === "tip" && !n.alinan && HTIP_BY[val]) n.alinan = HTIP_BY[val].st; if (p[2] === "tip") n.neden = ""; } }
+  else if (p[0] === "gncr") { var gr = S.records.find(function (x) { return x.id === p[1]; }); var gn = gr && (gr.ncr || []).find(function (x) { return x.id === p[2]; }); if (gn) { gn[p[3]] = val; if (p[3] === "tip" && !gn.alinan && HTIP_BY[val]) gn.alinan = HTIP_BY[val].st; if (p[3] === "tip") gn.neden = ""; } }
+  else if (p[0] === "gfire") { var fr = S.records.find(function (x) { return x.id === p[1]; }); var ff = fr && (fr.fire || [])[+p[2]]; if (ff) ff[p[3]] = val; }
+  else if (p[0] === "fire" && r) { var f = (r.fire || [])[+p[1]]; if (f) f[p[2]] = val; }
+  else if (p[0] === "set") { S.settings[p[1]] = parseFloat(String(val).replace(",", ".")) || 0; }
+  else if (p[0] === "new") { ui.nw[p[1]] = val; var pv = document.getElementById("nwprev"); if (pv) pv.textContent = previewText(); return false; }
+  else if (p[0] === "flt") { ui[p[1]] = val; return false; }
+  return true;
+}
+function autoEval(r, no) {
+  var it = itemsFor(r.deviceKey).find(function (x) { return x.no === no; }); if (!it) return;
+  var m = r.marks[no] || {}, ev = evalMeas(r, it, m.val);
+  if (ev && ev.ok !== null && !m.op) { m.op = ev.ok ? "OK" : "NOK"; r.marks[no] = m; }
+}
+document.addEventListener("input", function (ev) {
+  var t = ev.target, f = t.dataset && t.dataset.f; if (!f || t.tagName === "SELECT") return;
+  if (setField(f, t.value)) save();
+});
+document.addEventListener("change", function (ev) {
+  var t = ev.target;
+  if (t.id === "fileIn" && t.files && t.files[0]) { var rd = new FileReader(); rd.onload = function () { importText(String(rd.result)); }; rd.readAsText(t.files[0]); t.value = ""; return; }
+  var f = t.dataset && t.dataset.f; if (!f) return;
+  var keep = setField(f, t.value);
+  var r = curRec();
+  if (f.indexOf("val.") === 0 && r) { autoEval(r, f.slice(4)); save(); render(); return; }
+  if (keep) save();
+  if (t.dataset.rr || t.tagName === "SELECT") render();
+});
+document.addEventListener("click", function (ev) {
+  var b = ev.target.closest("[data-act]"); if (!b) return;
+  var a = b.dataset.act, v = b.dataset.v, r = curRec();
+  switch (a) {
+    case "nav": ui.view = v; ui.rec = null; window.scrollTo(0, 0); break;
+    case "period": ui.period = v; break;
+    case "dev": ui.dev = v; break;
+    case "fdev": ui.fdev = v; break;
+    case "fst": ui.fst = v; break;
+    case "nwdev": ui.nw.dev = v; break;
+    case "create": createRecords(); return;
+    case "grp": ui.openGrp[v] = !ui.openGrp[v]; break;
+    case "open": ui.rec = b.dataset.id; ui.tab = "liste"; window.scrollTo(0, 0); break;
+    case "back": ui.rec = null; break;
+    case "tab": ui.tab = v; break;
+    case "crit": ui.critOnly = !ui.critOnly; break;
+    case "mark":
+      if (!r) return; var no = b.dataset.no, col = b.dataset.col, m = Object.assign({}, r.marks[no] || {});
+      m[col] = m[col] === v ? "" : v; r.marks[no] = m; save(); break;
+    case "allok":
+      if (!r) return; itemsFor(r.deviceKey).forEach(function (it) { var mm = Object.assign({}, r.marks[it.no] || {}); if (!mm.op) mm.op = "OK"; if (!mm.qc) mm.qc = "OK"; r.marks[it.no] = mm; }); save(); toast("Boş kalan tüm onaylar uygun olarak işaretlendi."); break;
+    case "clear":
+      if (!r || !confirm("Bu karttaki tüm işaretler temizlensin mi? Ölçülen değerler korunur.")) return;
+      Object.keys(r.marks).forEach(function (k) { r.marks[k] = { val: r.marks[k].val }; }); save(); break;
+    case "ncrfrom":
+      if (!r) return; var it = itemsFor(r.deviceKey).find(function (x) { return x.no === b.dataset.no; });
+      r.ncr = r.ncr || []; r.ncr.push({ id: uid(), item: it.no, hata: it.p + ": uygun değil", alinan: it.st, farkedilen: it.st, analiz: "", duzeltme: "", durum: "Açık" }); ui.tab = "ncr"; save(); window.scrollTo(0, 0); break;
+    case "ncradd": if (!r) return; r.ncr = r.ncr || []; r.ncr.push({ id: uid(), item: "", hata: "", alinan: "", farkedilen: "", analiz: "", duzeltme: "", durum: "Açık" }); save(); break;
+    case "ncrdel": if (!r || !confirm("Uygunsuzluk kaydı silinsin mi?")) return; r.ncr = r.ncr.filter(function (x) { return x.id !== b.dataset.id; }); save(); break;
+    case "ncrdurum": if (!r) return; var n = r.ncr.find(function (x) { return x.id === b.dataset.id; }); if (n) n.durum = v; save(); break;
+    case "ncrsinif": if (!r) return; var ns = r.ncr.find(function (x) { return x.id === b.dataset.id; }); if (ns) ns.sinif = ns.sinif === v ? "" : v; save(); break;
+    case "ncrneden": if (!r) return; var nn = r.ncr.find(function (x) { return x.id === b.dataset.id; }); if (nn && HTIP_BY[nn.tip]) { var nd = HTIP_BY[nn.tip].neden[+b.dataset.i]; if (nn.neden === nd[0]) { nn.neden = ""; } else { nn.neden = nd[0]; nn.sinif = nd[1]; } } save(); break;
+    case "sug1": var sr = S.records.find(function (x) { return x.id === b.dataset.r; }); var sn = sr && (sr.ncr || []).find(function (x) { return x.id === b.dataset.id; }); if (sn && applySug(sn)) { save(); toast("Öneri uygulandı."); } break;
+    case "sugall": var cA = 0, cF = 0; allNcr().forEach(function (x) { if (applySug(x.n)) cA++; }); allFire().forEach(function (x) { if (!x.f.sinif) { var fs = suggestFire(x.r, x.f); if (fs) { x.f.sinif = fs; cF++; } } }); save(); toast(cA + " uygunsuzluk ve " + cF + " fire kaydına öneri uygulandı. Kontrol edip gerekirse düzeltin."); break;
+    case "hf": ui.hf = v; break;
+    case "hs": ui.hs = v; break;
+    case "normst": var cN = normalizeAll(); save(); toast(cN ? cN + " istasyon adı standartlaştırıldı." : "Düzeltilecek istasyon adı yok."); break;
+    case "printh": printHatalar(); return;
+    case "gotonc": ui.view = "kontrol"; ui.rec = b.dataset.r; ui.tab = "ncr"; window.scrollTo(0, 0); break;
+    case "fireadd": if (!r) return; r.fire = r.fire || []; r.fire.push({ code: "", qty: "", station: "", explanation: "" }); save(); break;
+    case "firedel": if (!r) return; r.fire.splice(+b.dataset.i, 1); save(); break;
+    case "print": if (r) printRec(r); return;
+    case "printan": printAnaliz(); return;
+    case "delrec": if (!r || !confirm("Kontrol kartı " + (r.serial || "") + " silinsin mi?")) return; S.records = S.records.filter(function (x) { return x.id !== r.id; }); ui.rec = null; save(); break;
+    case "seedload": if (!window.__QC_SEED || !confirm("Tarayıcıdaki " + S.records.length + " kart, dosyadaki " + window.__QC_SEED.records.length + " kartla değiştirilecek. Önce yedek almanız önerilir. Devam edilsin mi?")) return; S = JSON.parse(JSON.stringify(window.__QC_SEED)); S.settings = Object.assign({}, DEF.settings, S.settings || {}); normalizeAll(); save(); toast(S.records.length + " kart yüklendi."); break;
+    case "export": download("VARMEKS_QC_yedek_" + today() + ".json", JSON.stringify(S, null, 1)); toast("Yedek indirildi."); return;
+    case "import": var fi = document.getElementById("fileIn"); if (fi) fi.click(); return;
+    case "nlocal":
+      var raw = null; try { raw = localStorage.getItem("vrm-tracker-v2"); } catch (e) {}
+      if (!raw) { toast("Bu tarayıcıda Note Loop verisi bulunamadı. Note Loop'tan yedek indirip dosyadan aktarın."); return; }
+      try { var cnt = fromNoteLoop(JSON.parse(raw)); toast(cnt ? cnt + " kart aktarıldı." : "Aktarılacak yeni kart bulunamadı."); if (cnt) { ui.view = "kontrol"; ui.rec = null; } } catch (e) { toast("Note Loop verisi okunamadı."); }
+      break;
+    case "togrec": S.settings.showRec = !!b.checked; save(); break;
+    case "csync": if (cloud.user) cloudStart(); else if (cloud.sb) showLogin(); return;
+    case "logout": cloudLogout(); return;
+    case "wipe": if (!confirm("Tüm kontrol kartları silinecek" + (cloud.user ? " (buluttan da)" : "") + ". Emin misiniz?")) return; S.records = []; save(); toast("Tüm kartlar silindi."); break;
+    default: return;
+  }
+  render();
+});
+
+/* ---------------- render ---------------- */
+function render() {
+  renderNav();
+  var v = document.getElementById("v"), r = curRec();
+  if (ui.view === "kontrol" && r) v.innerHTML = viewDetail(r);
+  else if (ui.view === "kontrol") { ui.rec = null; v.innerHTML = viewList(); }
+  else if (ui.view === "hatalar") v.innerHTML = viewHatalar();
+  else if (ui.view === "analiz") v.innerHTML = viewAnaliz();
+  else if (ui.view === "veri") v.innerHTML = viewVeri();
+  else v.innerHTML = viewPanel();
+}
+function grain() {
+  try {
+    var c = document.createElement("canvas"); c.width = c.height = 140; var x = c.getContext("2d"); if (!x) return;
+    var img = x.createImageData(140, 140), d = img.data;
+    for (var i = 0; i < d.length; i += 4) { var g = Math.random() * 255 | 0; d[i] = d[i + 1] = d[i + 2] = g; d[i + 3] = 13; }
+    x.putImageData(img, 0, 0);
+    document.documentElement.style.setProperty("--grain", "url(" + c.toDataURL("image/png") + ")");
+  } catch (e) {}
+}
+document.getElementById("emblemRail").innerHTML = emblem() + '<div class="sub">Kalite kontrol</div>';
+document.getElementById("emblemTop").innerHTML = emblem();
+grain();
+if (normalizeAll()) save();
+render();
+cloudInit();
+window.__QC = { cloud: cloud, SYN: function () { return SYN; }, S: function () { return S; }, ui: ui, evalRec: evalRec, itemsFor: itemsFor, analysisData: analysisData };
+})();
+
+</script>
+</body>
+</html>
