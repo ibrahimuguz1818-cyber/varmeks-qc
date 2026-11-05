@@ -4,6 +4,13 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#FFFFFF">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="VARMEKS QC">
+<meta name="format-detection" content="telephone=no">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-180.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
@@ -348,7 +355,7 @@ button.kpi:hover{background:#EDEDED}
 .sgrid small{display:block;font-size:11px;color:var(--muted)}
 .done{background:#EAF6F0;border-radius:18px;padding:16px 18px;font-size:14px}
 
-@media (max-width:980px){ .ihead{display:none} .irow{grid-template-columns:34px minmax(0,1fr)} .irow .mk{grid-column:2} .who{display:block;grid-column:2;margin-bottom:-6px} .nf,.ncrstrip{margin-left:14px} .srail{position:static;max-width:none;flex-direction:row;overflow-x:auto;flex-basis:100%} .srail button{width:auto;flex:none} .cside{max-width:none} }
+@media (max-width:980px){ .ihead,.irow{grid-template-columns:34px minmax(0,1fr) 150px 150px} .nf,.ncrstrip{margin-left:14px} .srail{position:static;max-width:none;flex-direction:row;overflow-x:auto;flex-basis:100%} .srail button{width:auto;flex:none} .cside{max-width:none} }
 @media (max-width:760px){
   .hdr .wrap{gap:10px}
   .mnav{order:3;flex-basis:100%;overflow-x:auto;padding-bottom:2px}
@@ -361,6 +368,78 @@ button.kpi:hover{background:#EDEDED}
   .sechead h2{font-size:28px}
 }
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+/* ---- iPhone / iPad ---- */
+html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
+body{-webkit-tap-highlight-color:rgba(0,0,0,.06);overscroll-behavior-y:none}
+.hdr{padding-top:env(safe-area-inset-top,0px)}
+button,a,input,select,label{touch-action:manipulation}
+.tabbar{display:none}
+.resume{display:flex;flex-wrap:wrap;align-items:center;gap:12px 18px;background:var(--dark);color:#F3EDE3;border-radius:22px;padding:16px 20px;margin:18px 0 0}
+.resume .eyebrow{color:#BDB3A3}
+.resume b.s{font-family:var(--mono);font-size:20px;font-weight:500}
+.resume .m{font-size:13px;color:#D9D0C2}
+.resume .btn{margin-left:auto;background:#F3EDE3;color:#111;border-color:#F3EDE3;font-weight:600}
+.lastedit{font-size:12.5px;color:var(--muted);margin:6px 0 0}
+@media (pointer:coarse){
+  .in,input,select,textarea{font-size:16px!important}
+  .meas .in{width:116px}
+  .mk button{min-height:44px}
+  .seg-btns button,.tabs button{min-height:42px}
+  .btn.sm{min-height:42px}
+  .srail button{min-height:46px}
+  .nf .why button{min-height:46px}
+  .chipsel button{min-height:42px}
+}
+/* iPad dikey ve küçük tabletler */
+@media (max-width:1180px){
+  .cside{max-width:none;flex-basis:100%;display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:14px;align-items:start}
+  .cside>.closebtn,.cside>p,.cside>.row,.cside>.btn{grid-column:1/-1}
+  .citems{flex-basis:520px}
+}
+@media (max-width:1180px){
+  .hdr .wrap{row-gap:8px}
+  .mnav{order:3;flex-basis:100%;overflow-x:auto;scrollbar-width:none;padding-bottom:2px}
+  .mnav::-webkit-scrollbar{display:none}
+}
+@media (max-width:980px){
+  .srail{scrollbar-width:none;padding:4px 0}
+  .srail::-webkit-scrollbar{display:none}
+}
+/* telefon: alt menü */
+@media (max-width:760px){
+  .mnav{display:none}
+  .hdr .wrap{min-height:56px}
+  .tabbar{display:grid;grid-template-columns:repeat(5,1fr);position:fixed;left:0;right:0;bottom:0;z-index:40;background:rgba(255,255,255,.96);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-top:1px solid var(--line);padding:6px max(6px,env(safe-area-inset-left,0px)) calc(6px + env(safe-area-inset-bottom,0px)) max(6px,env(safe-area-inset-right,0px))}
+  .tabbar button{border:0;background:none;display:flex;flex-direction:column;align-items:center;gap:3px;padding:6px 0;min-height:52px;font-size:11px;font-weight:500;color:var(--muted);border-radius:14px}
+  .tabbar button svg{width:22px;height:22px}
+  .tabbar button[aria-current="page"]{color:var(--ink);background:var(--grp)}
+  main{padding-bottom:calc(96px + env(safe-area-inset-bottom,0px))}
+  .toast{bottom:calc(84px + env(safe-area-inset-bottom,0px))}
+  .ihead{display:none}
+  .irow{grid-template-columns:30px minmax(0,1fr)}
+  .irow>div:nth-child(2){grid-column:2}
+  .irow .who{display:block;grid-column:2;margin-bottom:-6px}
+  .irow .mk{grid-column:2}
+  .hdr .wrap{flex-wrap:nowrap}
+  .brand span,.brand i{display:none}
+  .syncpill{max-width:58vw;overflow:hidden}
+  .syncpill .cloudst{overflow:hidden;text-overflow:ellipsis}
+  .srail{position:sticky;top:calc(env(safe-area-inset-top,0px) + 56px);z-index:5;background:rgba(255,255,255,.96);margin:0 -4px}
+  .people{width:100%}
+  .people label{flex:1 1 140px}
+  .people .in{width:100%}
+  .people>div{flex-basis:100%}
+  .people>div .btn{width:100%;justify-content:center}
+  .allok{margin-left:0}
+  .ctool{gap:10px}
+  h1{font-size:44px}
+  .cardhead h1{font-size:46px}
+  .ns .form .row>div{flex:1 1 100%}
+  .ns .form .in{width:100%!important}
+  .resume .btn{margin-left:0;width:100%;justify-content:center}
+}
+@media (display-mode:standalone){ .hdr{padding-top:env(safe-area-inset-top,0px)} }
+
 </style>
 </head>
 <body>
@@ -370,6 +449,7 @@ button.kpi:hover{background:#EDEDED}
   <div class="tools"><button class="syncpill" data-act="nav" data-v="veri" title="Bulut durumu ve ayarlar"><span class="cloudst"></span></button></div>
 </div></header>
 <main id="v"></main>
+<nav class="tabbar" id="navBot" aria-label="Alt menü"></nav>
 <div id="boot-err" style="display:none;position:fixed;inset:auto 10px 80px 10px;background:#5a1d24;color:#fff;padding:10px;border-radius:6px;z-index:99;font-size:13px"></div>
 <script>
 /* Supabase bağlantısı: proje adresi ve anon (public) anahtar. Boş bırakılırsa uygulama içinden girilebilir. */
@@ -450,7 +530,33 @@ function load() { try { var s = JSON.parse(localStorage.getItem(KEY)); if (s && 
   if (window.__QC_SEED && window.__QC_SEED.records) { var z = JSON.parse(JSON.stringify(window.__QC_SEED)); z.settings = Object.assign({}, DEF.settings, z.settings || {}); try { localStorage.setItem(KEY, JSON.stringify(z)); } catch (e) {} return z; }
   return JSON.parse(JSON.stringify(DEF)); }
 var S = load();
-function save() { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) { if (!cloud.user) toast("Kaydedilemedi: depolama dolu olabilir. Veri sayfasından yedek alın."); } cloudQueue(); }
+function deviceName() {
+  var u = navigator.userAgent || "", tp = navigator.maxTouchPoints || 0;
+  if (/iPhone/.test(u)) return "iPhone";
+  if (/iPad/.test(u) || (/Macintosh/.test(u) && tp > 1)) return "iPad";
+  if (/Android/.test(u)) return /Mobile/.test(u) ? "Android telefon" : "Android tablet";
+  if (/Macintosh/.test(u)) return "Mac";
+  if (/Windows/.test(u)) return "bilgisayar";
+  return "cihaz";
+}
+function touchRec(r) { if (!r) return; r.touchedAt = Date.now(); r.touchedBy = (cloud && cloud.user && cloud.user.email) || ""; r.touchedOn = deviceName(); }
+function ago(t) {
+  var d = Math.max(0, (Date.now() - t) / 1000);
+  if (d < 60) return "az önce"; if (d < 3600) return Math.round(d / 60) + " dk önce"; if (d < 86400) return Math.round(d / 3600) + " sa önce";
+  return new Date(t).toLocaleDateString("tr-TR");
+}
+function lastRec() {
+  var me = cloud && cloud.user && cloud.user.email, best = null;
+  S.records.forEach(function (r) { if (!r.touchedAt || r.closedAt) return; if (me && r.touchedBy && r.touchedBy !== me) return; if (!best || r.touchedAt > best.touchedAt) best = r; });
+  return best;
+}
+function resumeCard() {
+  var r = lastRec(); if (!r || (ui.view === "kontrol" && ui.rec)) return "";
+  var e = evalRec(r), done = e.items.filter(function (it) { var m = r.marks[it.no] || {}; return m.op && m.qc; }).length;
+  return '<div class="resume"><div><div class="eyebrow">Kaldığın yer</div><b class="s">' + esc(r.serial || "—") + '</b></div><div class="m">' + esc(devLabel(r.deviceKey)) + ' · ' + done + ' / ' + e.items.length + ' madde<br>' + esc(r.touchedOn || "") + (r.touchedOn ? " · " : "") + ago(r.touchedAt) + '</div><button class="btn" data-act="open" data-id="' + r.id + '">Devam et →</button></div>';
+}
+function save() {
+  if (ui.view === "kontrol" && ui.rec) { var tr = S.records.find(function (x) { return x.id === ui.rec; }); if (tr) touchRec(tr); } try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) { if (!cloud.user) toast("Kaydedilemedi: depolama dolu olabilir. Veri sayfasından yedek alın."); } cloudQueue(); }
 var ui = { view: "panel", rec: null, tab: "liste", critOnly: false, openGrp: {}, period: "all", dev: "all", fdev: "all", fst: "all", q: "", nw: { dev: "16kW", ser: "", n: 1, wo: "" }, hf: "all", hs: "all" };
 
 /* ---------------- bulut (Supabase) ---------------- */
@@ -644,6 +750,13 @@ function cloudInit() {
     else if (s && s.user) cloud.user = s.user;
   });
   window.addEventListener("online", function () { if (cloud.user) cloudStart(); });
+  var lastWake = Date.now();
+  document.addEventListener("visibilitychange", function () {
+    if (document.visibilityState !== "visible" || !cloud.user) return;
+    if (Date.now() - lastWake < 8000) return; lastWake = Date.now();
+    if (cloud.ch) { try { cloud.sb.removeChannel(cloud.ch); } catch (e) {} cloud.ch = null; }
+    cloudStart();
+  });
 }
 function cloudPanel() {
   var c = cloudCfg(), d = SYN.init ? dirty() : null;
@@ -847,6 +960,15 @@ function renderNav() {
     (before.length ? '<div class="grp">' + before.map(btn).join("") + '</div>' : '') +
     '<button class="on" data-act="nav" data-v="' + NAV[i][0] + '" aria-current="page"><span class="dot"></span>' + esc(NAV[i][1]) + '</button>' +
     (after.length ? '<div class="grp">' + after.map(btn).join("") + '</div>' : '');
+  var IC = {
+    panel: '<path d="M4 13h6V4H4zM14 20h6V11h-6zM4 20h6v-4H4zM14 7h6V4h-6z"/>',
+    kontrol: '<path d="M9 5h10M9 12h10M9 19h10"/><path d="M4 5l1 1 2-2M4 12l1 1 2-2M4 19l1 1 2-2"/>',
+    hatalar: '<path d="M12 4l9 16H3z"/><path d="M12 10v4M12 17v.5"/>',
+    analiz: '<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>',
+    veri: '<path d="M7 18a4 4 0 0 1-.5-8A6 6 0 0 1 18 9a4 4 0 0 1-1 9z"/>'
+  };
+  var nb = document.getElementById("navBot");
+  if (nb) nb.innerHTML = NAV.map(function (n) { return '<button data-act="nav" data-v="' + n[0] + '"' + (n[0] === cur ? ' aria-current="page"' : '') + '><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + IC[n[0]] + '</svg>' + esc(NAVM[n[0]] || n[1]) + '</button>'; }).join("");
 }
 
 /* ---------------- PANEL ---------------- */
@@ -866,7 +988,7 @@ function viewPanel() {
   var B = batches(S.records), last = B[B.length - 1];
 
   var kp = function (v, label, dot, sub, act, alert) { return '<button class="kpi' + (alert ? " alert" : "") + '" data-act="nav" data-v="' + act + '"><span class="arr" aria-hidden="true">→</span><b>' + v + '</b><span><i class="dotc" style="background:' + dot + '"></i>' + label + '</span><small>' + sub + '</small></button>'; };
-  var html = nlBanner() +
+  var html = nlBanner() + resumeCard() +
     '<section class="hero"><div class="orb" aria-hidden="true"></div><h1>Kontrol et. İşaretle.<br><span class="g">Erken yakala.</span></h1></section>' +
     '<div class="herofoot"><div class="txt"><p class="small muted">VARMEKS üretim kalite kontrolü</p><p class="big">Her cihaz istasyon istasyon kontrol listesinden geçer; operatör ve kalite ayrı ayrı onaylar.</p>' +
       '<p class="small muted"><b style="color:var(--ink);font-weight:600">' + S.records.length + ' kart</b>, ' + B.length + ' seri' + (last ? ' · son seri ' + esc(last.id) + ', ' + trDate(last.date) : '') + '</p></div>' +
@@ -1040,7 +1162,7 @@ function viewList() {
       '<div class="hide-m">' + lineStrip(agg) + '</div><div class="small muted hide-m">' + esc(summary) + '</div><div style="text-align:right"><span class="mono small">%' + pct(done, tot) + '</span><div class="small muted">' + (open ? "Kapat" : "Aç") + '</div></div></button>' +
       (open ? L.map(recRow).join("") + '<div style="padding:10px 18px 14px;background:#fff;border-top:1px solid #E7E7E7;display:flex;justify-content:flex-end"><button class="btn sm" data-act="allbatch" data-v="' + esc(g.k) + '">✓ Serinin tüm kartlarını uygun işaretle</button></div>' : "") + '</div>';
   }).join("");
-  return nlBanner() + '<div class="between" style="align-items:flex-end"><div><p class="eyebrow" style="margin:0">' + S.records.length + ' kart · ' + groups.length + ' seri</p><h1>Kontrol kartları</h1><p class="lead" style="margin:0">Seriler en yeniden eskiye; seriye dokununca cihazları açılır.</p></div><button class="btn pri" data-act="nav" data-v="yeni">Yeni seri aç</button></div>' +
+  return nlBanner() + '<div class="between" style="align-items:flex-end"><div><p class="eyebrow" style="margin:0">' + S.records.length + ' kart · ' + groups.length + ' seri</p><h1>Kontrol kartları</h1><p class="lead" style="margin:0">Seriler en yeniden eskiye; seriye dokununca cihazları açılır.</p></div><button class="btn pri" data-act="nav" data-v="yeni">Yeni seri aç</button></div>' + resumeCard() +
     '<div class="row" style="margin:22px 0 14px"><div class="seg-btns">' + dF + '</div><div class="seg-btns">' + stF + '</div><input class="in" style="max-width:220px;border-radius:999px" placeholder="Seri numarası ara" value="' + esc(ui.q) + '" data-f="flt.q" data-rr="1" aria-label="Seri numarasıyla ara"></div>' +
     '<div class="grp-list">' + (list || '<div class="panel empty">Bu filtreye uyan kart yok.</div>') + '</div>';
 }
@@ -1104,7 +1226,7 @@ function viewDetail(r) {
   var nItems = e.items.length, doneItems = e.items.filter(function (it) { var m = r.marks[it.no] || {}; return m.op && m.qc; }).length;
   var ncrN = (r.ncr || []).length, fireN = (r.fire || []).length;
   var head = '<button class="back" data-act="back">← ' + esc(r.batch ? r.batch + " serisi" : "Kontrol kartları") + '</button>' +
-    '<div class="cardhead"><div class="l"><p class="eyebrow" style="margin:6px 0 0">Kontrol kartı · ' + esc(D.doc || "") + ' · ' + esc(D.label || r.deviceKey) + '</p><h1>' + serialHtml(r.serial) + '</h1><p class="meta">' + esc(D.model || "") + ' · ' + trDate(r.date) + ' · ' + nItems + ' madde · ' + (r.workOrder ? "İE " + esc(r.workOrder) : "iş emri girilmedi") + (r.closedAt ? ' · <span class="st ok" style="vertical-align:middle">Kapatıldı</span>' : '') + '</p></div>' +
+    '<div class="cardhead"><div class="l"><p class="eyebrow" style="margin:6px 0 0">Kontrol kartı · ' + esc(D.doc || "") + ' · ' + esc(D.label || r.deviceKey) + '</p><h1>' + serialHtml(r.serial) + '</h1><p class="meta">' + esc(D.model || "") + ' · ' + trDate(r.date) + ' · ' + nItems + ' madde · ' + (r.workOrder ? "İE " + esc(r.workOrder) : "iş emri girilmedi") + (r.closedAt ? ' · <span class="st ok" style="vertical-align:middle">Kapatıldı</span>' : '') + '</p>' + (r.touchedAt ? '<p class="lastedit">Son değişiklik: ' + esc(r.touchedOn || "") + (r.touchedBy ? " · " + esc(r.touchedBy) : "") + " · " + ago(r.touchedAt) + '</p>' : '') + '</div>' +
     '<div class="people"><label>Operatör<input class="in" value="' + esc(r.operator || "") + '" data-f="rec.operator" placeholder="Ad Soyad"></label><label>Kalite<input class="in" value="' + esc(r.qc || "") + '" data-f="rec.qc" placeholder="Ad Soyad"></label><div style="display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--muted)"><span>A4 karttan aktar</span><button class="btn pri" data-act="allcard" style="min-height:44px">✓ Tümünü uygun işaretle</button></div></div></div>';
   var tabs = '<div class="tabs" role="tablist" style="margin-top:22px">' + [["liste", "Kontrol listesi"], ["ncr", "Uygunsuzluk ve fire" + (ncrN + fireN ? " (" + (ncrN + fireN) + ")" : "")]].map(function (t) { return '<button role="tab" data-act="tab" data-v="' + t[0] + '" aria-selected="' + (ui.tab === t[0] || (t[0] === "ncr" && ui.tab === "fire")) + '">' + t[1] + '</button>'; }).join("") + '</div>';
   if (ui.tab === "ncr" || ui.tab === "fire") return head + tabs + '<h2>Uygunsuzluk kayıtları</h2>' + viewNcr(r) + '<h2 style="margin-top:28px">Fire</h2>' + viewFire(r);
@@ -1734,6 +1856,7 @@ function render() {
 if (normalizeAll()) save();
 render();
 cloudInit();
+if ("serviceWorker" in navigator && location.protocol === "https:") { window.addEventListener("load", function () { navigator.serviceWorker.register("sw.js").catch(function () {}); }); }
 window.__QC = { cloud: cloud, SYN: function () { return SYN; }, S: function () { return S; }, ui: ui, evalRec: evalRec, itemsFor: itemsFor, analysisData: analysisData };
 })();
 
