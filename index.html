@@ -79,7 +79,9 @@ p{margin:0 0 10px;max-width:80ch}
 .panel{background:var(--soft);border-radius:18px;padding:20px}
 .panel.white{background:#fff;border:1px solid var(--line)}
 .stack>*+*{margin-top:16px}
-.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.grid2{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px}
+.grid2>*,.grid3>*,.kpis>*{min-width:0}
+html,body{overflow-x:clip}
 .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
 .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
 .between{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap}
@@ -359,7 +361,7 @@ button.kpi:hover{background:#EDEDED}
 @media (max-width:760px){
   .hdr .wrap{gap:10px}
   .mnav{order:3;flex-basis:100%;overflow-x:auto;padding-bottom:2px}
-  .grid2,.grid3{grid-template-columns:1fr}
+  .grid2,.grid3{grid-template-columns:minmax(0,1fr)}
   .rec-row,.grp-h{grid-template-columns:1fr auto;gap:8px}
   .rec-row .hide-m,.grp-h .hide-m{display:none}
   .herofoot .cta{border-left:0;padding-left:0;margin-left:0}
