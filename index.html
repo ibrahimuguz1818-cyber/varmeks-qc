@@ -1038,7 +1038,7 @@ function viewList() {
     var summary = [cnt.ok ? cnt.ok + " sevke hazır" : "", cnt.nok ? cnt.nok + " uygunsuz" : "", cnt.hold ? cnt.hold + " bekletmede" : "", cnt.run ? cnt.run + " sürüyor" : ""].filter(Boolean).join(", ");
     return '<div class="grp"><button class="grp-h" data-act="grp" data-v="' + esc(g.k) + '" aria-expanded="' + open + '"><div><div class="serial">' + esc(L[0].serial) + (L.length > 1 ? ' – ' + esc(String(L[L.length - 1].serial).slice(-3)) : '') + '</div><div class="small muted">' + esc(devLabel(g.r0.deviceKey)) + ', ' + trDate(g.r0.date) + ', ' + L.length + ' cihaz</div></div>' +
       '<div class="hide-m">' + lineStrip(agg) + '</div><div class="small muted hide-m">' + esc(summary) + '</div><div style="text-align:right"><span class="mono small">%' + pct(done, tot) + '</span><div class="small muted">' + (open ? "Kapat" : "Aç") + '</div></div></button>' +
-      (open ? L.map(recRow).join("") : "") + '</div>';
+      (open ? L.map(recRow).join("") + '<div style="padding:10px 18px 14px;background:#fff;border-top:1px solid #E7E7E7;display:flex;justify-content:flex-end"><button class="btn sm" data-act="allbatch" data-v="' + esc(g.k) + '">✓ Serinin tüm kartlarını uygun işaretle</button></div>' : "") + '</div>';
   }).join("");
   return nlBanner() + '<div class="between" style="align-items:flex-end"><div><p class="eyebrow" style="margin:0">' + S.records.length + ' kart · ' + groups.length + ' seri</p><h1>Kontrol kartları</h1><p class="lead" style="margin:0">Seriler en yeniden eskiye; seriye dokununca cihazları açılır.</p></div><button class="btn pri" data-act="nav" data-v="yeni">Yeni seri aç</button></div>' +
     '<div class="row" style="margin:22px 0 14px"><div class="seg-btns">' + dF + '</div><div class="seg-btns">' + stF + '</div><input class="in" style="max-width:220px;border-radius:999px" placeholder="Seri numarası ara" value="' + esc(ui.q) + '" data-f="flt.q" data-rr="1" aria-label="Seri numarasıyla ara"></div>' +
@@ -1097,8 +1097,7 @@ function nfOpen(r, it) { ui.nf = { rid: r.id, no: it.no, tip: SUGT[it.no] || SUG
 function selFor(r, e) {
   if (!ui.selMap) ui.selMap = {};
   if (ui.selMap[r.id]) return ui.selMap[r.id];
-  var first = CHK_STATIONS.find(function (s) { return e.stState[s] !== "ok" && e.stState[s] !== "none"; });
-  return ui.selMap[r.id] = first || "all";
+  return ui.selMap[r.id] = "all";
 }
 function viewDetail(r) {
   var e = evalRec(r), sel = ui.sel = selFor(r, e), D = CHK_DEVICES.find(function (d) { return d.key === r.deviceKey; }) || {};
@@ -1106,7 +1105,7 @@ function viewDetail(r) {
   var ncrN = (r.ncr || []).length, fireN = (r.fire || []).length;
   var head = '<button class="back" data-act="back">← ' + esc(r.batch ? r.batch + " serisi" : "Kontrol kartları") + '</button>' +
     '<div class="cardhead"><div class="l"><p class="eyebrow" style="margin:6px 0 0">Kontrol kartı · ' + esc(D.doc || "") + ' · ' + esc(D.label || r.deviceKey) + '</p><h1>' + serialHtml(r.serial) + '</h1><p class="meta">' + esc(D.model || "") + ' · ' + trDate(r.date) + ' · ' + nItems + ' madde · ' + (r.workOrder ? "İE " + esc(r.workOrder) : "iş emri girilmedi") + (r.closedAt ? ' · <span class="st ok" style="vertical-align:middle">Kapatıldı</span>' : '') + '</p></div>' +
-    '<div class="people"><label>Operatör<input class="in" value="' + esc(r.operator || "") + '" data-f="rec.operator" placeholder="Ad Soyad"></label><label>Kalite<input class="in" value="' + esc(r.qc || "") + '" data-f="rec.qc" placeholder="Ad Soyad"></label></div></div>';
+    '<div class="people"><label>Operatör<input class="in" value="' + esc(r.operator || "") + '" data-f="rec.operator" placeholder="Ad Soyad"></label><label>Kalite<input class="in" value="' + esc(r.qc || "") + '" data-f="rec.qc" placeholder="Ad Soyad"></label><div style="display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--muted)"><span>A4 karttan aktar</span><button class="btn pri" data-act="allcard" style="min-height:44px">✓ Tümünü uygun işaretle</button></div></div></div>';
   var tabs = '<div class="tabs" role="tablist" style="margin-top:22px">' + [["liste", "Kontrol listesi"], ["ncr", "Uygunsuzluk ve fire" + (ncrN + fireN ? " (" + (ncrN + fireN) + ")" : "")]].map(function (t) { return '<button role="tab" data-act="tab" data-v="' + t[0] + '" aria-selected="' + (ui.tab === t[0] || (t[0] === "ncr" && ui.tab === "fire")) + '">' + t[1] + '</button>'; }).join("") + '</div>';
   if (ui.tab === "ncr" || ui.tab === "fire") return head + tabs + '<h2>Uygunsuzluk kayıtları</h2>' + viewNcr(r) + '<h2 style="margin-top:28px">Fire</h2>' + viewFire(r);
 
@@ -1141,7 +1140,7 @@ function viewDetail(r) {
   var gt = gasTarget(r.deviceKey);
   var missing = [];
   if (cnt.e) missing.push(cnt.e + " onay boş");
-  e.items.forEach(function (it) { if (needsVal(it) && !String((r.marks[it.no] || {}).val || "").trim()) missing.push(it.p.toLocaleLowerCase("tr") + " değeri yok"); });
+  var warnVals = e.items.filter(function (it) { return needsVal(it) && !String((r.marks[it.no] || {}).val || "").trim(); }).map(function (it) { return it.p.toLocaleLowerCase("tr"); });
   var unrec = e.nok.filter(function (it) { return !(r.ncr || []).some(function (n) { return String(n.item) === String(it.no); }); }).length;
   if (unrec) missing.push(unrec + " NOK maddenin kaydı yok");
   var recs = (r.ncr || []).map(function (n) {
@@ -1155,7 +1154,7 @@ function viewDetail(r) {
       '<button class="btn sm" data-act="ncrfree" style="margin-top:12px;width:100%;justify-content:center;border-style:dashed">+ Maddeye bağlı olmayan hata</button>' + (ncrN || fireN ? '<button class="btn sm ghost" data-act="tab" data-v="ncr" style="margin-top:6px;width:100%;justify-content:center">Kayıtları ayrıntılı düzenle</button>' : '') + '</div>' +
     '<div class="panel"><div class="eyebrow" style="margin-bottom:10px">Kart bilgileri</div><div class="stack" style="--g:10px">' + fld("Tarih", "rec.date", r.date, "date") + fld("Seri numarası", "rec.serial", r.serial) + fld("İş emri", "rec.workOrder", r.workOrder) + '</div></div>' +
     (r.closedAt ? '<button class="btn" data-act="reopen" style="justify-content:center;min-height:50px">Kartı yeniden aç</button><p class="small muted" style="text-align:center;margin:-6px 0 0">' + new Date(r.closedAt).toLocaleString("tr-TR") + ' tarihinde kapatıldı.</p>' :
-      '<button class="closebtn" data-act="closecard"' + (missing.length ? ' disabled' : '') + '>Kartı kapat</button><p class="small muted" style="text-align:center;margin:-6px 0 0">' + (missing.length ? 'Kapatmak için: ' + esc(missing.join(" · ")) : 'Kart kapatılabilir.') + '</p>') +
+      '<button class="closebtn" data-act="closecard"' + (missing.length ? ' disabled' : '') + '>Kartı kapat</button><p class="small muted" style="text-align:center;margin:-6px 0 0">' + (missing.length ? 'Kapatmak için: ' + esc(missing.join(" · ")) : 'Kart kapatılabilir.') + (warnVals.length ? '<br><span style="color:var(--warn)">Girilmemiş ölçüm: ' + esc(warnVals.join(", ")) + '</span>' : '') + '</p>') +
     '<div class="row" style="justify-content:center"><button class="btn sm" data-act="print">Yazdır (PDF)</button><button class="btn sm danger" data-act="delrec">Kartı sil</button></div>' +
     '</aside>';
   return head + tabs + tool + '<div class="cbody">' + rail + items + side + '</div>';
@@ -1203,11 +1202,11 @@ function nfSave(r) {
   ui.nf = null; ui.cnote = "Uygunsuzluk kaydedildi" + (nf.res !== "yerinde" ? ", fire kaydı da oluşturuldu." : ".");
   save();
 }
-function markAll(r, who) {
-  var e = evalRec(r), sel = ui.sel || "all", n = 0, skipNok = 0, skipVal = 0;
+function markAll(r, who, whole, silent) {
+  var e = evalRec(r), sel = whole ? "all" : (ui.sel || "all"), n = 0, skipNok = 0, skipVal = 0;
   e.items.forEach(function (it) {
     if (sel !== "all" && it.st !== sel) return;
-    var m = Object.assign({}, r.marks[it.no] || {}), needs = needsVal(it) && !String(m.val || "").trim();
+    var m = Object.assign({}, r.marks[it.no] || {}), needs = !whole && needsVal(it) && !String(m.val || "").trim();
     ["op", "qc"].forEach(function (c) {
       if (who !== "both" && who !== c) return;
       if (m[c] === "NOK") { skipNok++; return; }
@@ -1218,7 +1217,8 @@ function markAll(r, who) {
     r.marks[it.no] = m;
   });
   ui.cnote = n + " onay OK işaretlendi." + (skipNok ? " NOK olanlara dokunulmadı." : "") + (skipVal ? " Ölçüm değeri girilmemiş maddeler atlandı." : "");
-  save();
+  if (!silent) save();
+  return n;
 }
 
 function stOpts(sel) { return '<option value="">Seçin</option>' + CHK_STATIONS.map(function (s) { return '<option' + (s === sel ? " selected" : "") + '>' + esc(s) + '</option>'; }).join(""); }
@@ -1656,6 +1656,11 @@ document.addEventListener("click", function (ev) {
       else if (ui.nf && String(ui.nf.no) === String(no) && m.op !== "NOK" && m.qc !== "NOK") ui.nf = null;
       save(); break;
     case "allok": if (!r) return; markAll(r, v || "both"); break;
+    case "allcard": if (!r) return; markAll(r, "both", true); ui.cnote += " Ölçüm değerlerini (gaz, kW) ayrıca girebilirsiniz."; break;
+    case "allbatch":
+      var bl = S.records.filter(function (x) { return batchKey(x) === v; }), tot = 0;
+      if (!bl.length || !confirm("Bu serideki " + bl.length + " kartın boş onayları OK işaretlensin mi? NOK verilmiş maddelere dokunulmaz.")) return;
+      bl.forEach(function (x) { tot += markAll(x, "both", true, true); }); save(); toast(bl.length + " kartta " + tot + " onay OK işaretlendi."); break;
     case "sel": if (!r) return; ui.selMap = ui.selMap || {}; ui.selMap[r.id] = v; ui.cnote = ""; break;
     case "cf": ui.cf = v; break;
     case "nftip": if (ui.nf) { ui.nf.tip = v; ui.nf.why = 0; ui.nf.sinif = ""; } break;
