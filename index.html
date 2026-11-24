@@ -264,6 +264,14 @@ button.kpi:hover{background:#EDEDED}
 .allok{margin-left:auto;display:flex;flex-wrap:wrap;align-items:center;gap:8px}
 .allok .lbl{font-size:13px;color:var(--muted)}
 .cnote{flex-basis:100%;font-size:12.5px;color:var(--ok-ink)}
+.chip.brand{background:#fff;border:1px solid #D6D6D6;color:var(--ink)} .chip.brand.alt{background:#EEF3FF;border-color:#C9D6F5;color:#1D3A8A}
+.cnotice{display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between;margin:16px 0 0;padding:12px 16px;border-radius:16px;background:var(--warn-soft);font-size:13.5px}
+.skipn{margin:0 14px 6px;padding:8px 12px;border-radius:12px;background:var(--grp);font-size:12.5px;color:var(--muted)}
+.osel select{min-width:220px;max-width:100%;font-family:inherit}
+.lsum{margin:8px 0 0;padding:0;list-style:none;display:grid;gap:3px;font-size:12.5px}.lsum li.off{color:var(--muted);text-decoration:line-through}
+.dgf{margin-top:18px;border:1px solid var(--ink)}
+.oemh,.oemr{display:grid;grid-template-columns:1.1fr 1.3fr 1fr 1fr auto auto;gap:8px;align-items:center}.oemr{margin-top:8px}.oemh{margin-top:6px}
+@media (max-width:760px){.oemh{display:none}.oemr{grid-template-columns:1fr 1fr;padding:10px 0;border-top:1px solid #E7E7E7}.osel select{min-width:0;width:100%}}
 .cbody{display:flex;flex-wrap:wrap;gap:24px;align-items:flex-start;margin-top:18px}
 .srail{flex:1 1 220px;max-width:260px;min-width:0;display:flex;flex-direction:column;gap:4px;position:sticky;top:84px}
 .srail button{display:flex;align-items:center;gap:10px;width:100%;min-height:44px;padding:0 14px;border:0;border-radius:999px;background:none;font-size:13.5px;font-weight:500;text-align:left}
@@ -527,7 +535,7 @@ var STRENGTHS = [
 
 /* ---------------- durum ---------------- */
 var KEY = "varmeks-qc-v1";
-var DEF = { records: [], settings: { showRec: true, gasTol: 2, perfTol: 10 } };
+var DEF = { records: [], settings: { showRec: true, gasTol: 2, perfTol: 10, oem: [] } };
 function load() { try { var s = JSON.parse(localStorage.getItem(KEY)); if (s && s.records && s.records.length) { s.settings = Object.assign({}, DEF.settings, s.settings || {}); return s; } } catch (e) {}
   if (window.__QC_SEED && window.__QC_SEED.records) { var z = JSON.parse(JSON.stringify(window.__QC_SEED)); z.settings = Object.assign({}, DEF.settings, z.settings || {}); try { localStorage.setItem(KEY, JSON.stringify(z)); } catch (e) {} return z; }
   return JSON.parse(JSON.stringify(DEF)); }
@@ -946,15 +954,59 @@ function toast(t) { var el = document.createElement("div"); el.className = "toas
 function pct(a, b) { return b ? Math.round(a / b * 100) : 0; }
 
 /* ---------------- madde kataloğu ---------------- */
-function ordNo(n) { n = String(n); return n.charAt(0) === "Ö" ? 1000 + parseInt(n.slice(1), 10) : parseInt(n, 10); }
-function itemsFor(dk, forceRec) {
-  var base = ((CHK_CATALOG[dk] || { items: [] }).items).map(function (it) {
-    var c = CLS[it.no] || ["GORSEL", "m"];
-    return { no: String(it.no), st: it.st, p: it.p, m: it.m, k: it.k, cat: c[0], crit: c[1], rec: false };
+function ordNo(n) { n = String(n); if (n.charAt(0) === "Ö") return 1000 + parseInt(n.slice(1), 10); if (n.charAt(0) === "D") return 49 + parseInt(n.slice(1), 10) / 10; return parseFloat(n); }
+/* Marka (Varmeks / OEM firması) ve pazar (yurt içi / yurt dışı) — final etiket maddeleri buna göre değişir */
+var CHKV = 2;
+var PAZAR = [["yi", "Yurt içi"], ["yd", "Yurt dışı"]];
+var LBL = { pp: "Varmeks Şeffaf PP Kabartma", griYi: "Yurt içi gri etiket", griYd: "Yurt dışı gri etiket", kutuYi: "Varmeks standart kutu", kutuYd: "Yurt dışı kutusu" };
+var LABEL_NOS = ["46.1", "46.2", "46.3", "46.4", "48", "50"];
+var DG_SEBEP = ["Sipariş / müşteri değişti", "Yurt dışına yönlendirildi", "OEM markasına dönüştürüldü", "Etiket hasarlı / yanlış basılmış", "Diğer"];
+function oemList() { return (S.settings.oem || []).filter(function (f) { return f && f.id; }); }
+function oemById(id) { return oemList().find(function (f) { return f.id === id; }) || null; }
+function brandCtx(x) {
+  var r = x && typeof x === "object" ? x : { deviceKey: x, chkv: CHKV };
+  var firm = r.marka && r.marka !== "varmeks" ? oemById(r.marka) : null;
+  return { r: r, v2: (r.chkv || 0) >= CHKV, firm: firm, oem: !!(r.marka && r.marka !== "varmeks"), yd: r.pazar === "yd" };
+}
+function brandName(r) { var c = brandCtx(r); return c.oem ? (c.firm ? c.firm.ad : "OEM (silinmiş firma)") : "Varmeks"; }
+function brandTag(r) { var c = brandCtx(r); return (c.oem ? brandName(r) : "Varmeks") + " · " + (c.yd ? "Yurt dışı" : "Yurt içi"); }
+function uniq(a) { var o = []; a.forEach(function (x) { if (x && o.indexOf(x) < 0) o.push(x); }); return o; }
+function labelItems(c) {
+  var F = "Final Kontrol Test İstasyonu", f = c.firm, out = [], skip = [];
+  var griExp = f && f.gri ? f.gri : c.yd ? LBL.griYd : LBL.griYi;
+  var kutuExp = f && f.kutu ? f.kutu : c.yd ? LBL.kutuYd : LBL.kutuYi;
+  var allFirm = function (k) { return oemList().map(function (x) { return x[k]; }); };
+  out.push({ no: "46.1", st: F, p: "Etiket Elektrik Sarı", m: "-", k: "Her cihazda · Var-Yok" });
+  out.push({ no: "46.2", st: F, p: "Gri cihaz etiketi (ürün bilgi)", m: "-", k: "Beklenen: " + griExp, opts: uniq([LBL.griYi, LBL.griYd].concat(allFirm("gri"))), exp: griExp });
+  var servis = c.oem ? !!(f && f.servis) : !c.yd;
+  if (servis) out.push({ no: "46.3", st: F, p: "Hızlı Servis Çözümleri etiketi", m: "-", k: "Var-Yok" });
+  else skip.push("Hızlı Servis Çözümleri etiketi");
+  var markaExp = c.oem ? (f && f.etiket ? f.etiket : "") : (c.yd ? "" : LBL.pp);
+  if (markaExp) out.push({ no: "46.4", st: F, p: "Marka etiketi", m: "-", k: "Beklenen: " + markaExp, opts: uniq([LBL.pp].concat(allFirm("etiket"))), exp: markaExp });
+  else skip.push(c.oem ? "Marka etiketi (" + brandName(c.r) + " için tanımlı değil)" : "Varmeks Şeffaf PP Kabartma");
+  out.push({ no: "48", st: F, p: "Kutu ve kutu etiketi", m: "-", k: "Beklenen: " + kutuExp, opts: uniq([LBL.kutuYi, LBL.kutuYd].concat(allFirm("kutu"))), exp: kutuExp });
+  out.push({ no: "50", st: F, p: "QC Pass etiketi", m: "-", k: "Bütün kontroller bittikten sonra en son yapıştırılır", last: true });
+  var dg = lastDg(c.r);
+  if (dg && dg.acildi) {
+    out.push({ no: "D1", st: F, p: "Açma sonrası: panel / kapak vidaları", m: "-", k: "Etiket değişimi için açıldı · vidalar tam, tork uygun", dg: true });
+    out.push({ no: "D2", st: F, p: "Açma sonrası: kasa çizik / göçük ve kablo kontrolü", m: "-", k: "Hasar yok, kablolar yerinde", dg: true });
+  }
+  return { items: out, skip: skip };
+}
+function lastDg(r) { var d = (r && r.degisim) || []; return d.length ? d[d.length - 1] : null; }
+var CLS2 = { "46.1": ["ETIKET", "M"], "46.2": ["ETIKET", "M"], "46.3": ["ETIKET", "m"], "46.4": ["ETIKET", "M"], "48": ["ETIKET", "M"], "50": ["ETIKET", "M"], "D1": ["BAGLANTI", "M"], "D2": ["GORSEL", "M"] };
+function itemsFor(x, forceRec) {
+  var c = brandCtx(x), dk = c.r.deviceKey, li = c.v2 ? labelItems(c) : null;
+  var base = ((CHK_CATALOG[dk] || { items: [] }).items).filter(function (it) { return !li || (it.no !== 46 && it.no !== 48); }).map(function (it) {
+    var cl = CLS[it.no] || ["GORSEL", "m"];
+    return { no: String(it.no), st: it.st, p: it.p, m: it.m, k: it.k, cat: cl[0], crit: cl[1], rec: false };
   });
+  if (li) base = base.concat(li.items.map(function (it) { var cl = CLS2[it.no] || ["ETIKET", "M"]; return Object.assign({ cat: cl[0], crit: cl[1], rec: false }, it); }));
   var arr = base;
-  if (S.settings.showRec || forceRec) arr = arr.concat(REC.map(function (x) { return Object.assign({ rec: true }, x); }));
-  return arr.sort(function (a, b) { return CHK_STATIONS.indexOf(a.st) - CHK_STATIONS.indexOf(b.st) || ordNo(a.no) - ordNo(b.no); });
+  if (S.settings.showRec || forceRec) arr = arr.concat(REC.map(function (y) { return Object.assign({ rec: true }, y); }));
+  arr = arr.sort(function (a, b) { return CHK_STATIONS.indexOf(a.st) - CHK_STATIONS.indexOf(b.st) || (a.last ? 1e6 : ordNo(a.no)) - (b.last ? 1e6 : ordNo(b.no)); });
+  arr.skip = li ? li.skip : [];
+  return arr;
 }
 function evalMeas(r, it, val) {
   var spec = MEAS[it.no]; if (!spec || val === "" || val == null) return null;
@@ -976,7 +1028,7 @@ function evalMeas(r, it, val) {
   return { ok: null, txt: "Kaydedildi", short: "" };
 }
 function evalRec(r) {
-  var items = itemsFor(r.deviceKey), done = 0, nok = [], crit = [], st = {};
+  var items = itemsFor(r), done = 0, nok = [], crit = [], st = {};
   CHK_STATIONS.forEach(function (s) { st[s] = { n: 0, done: 0, nok: 0, crit: 0 }; });
   items.forEach(function (it) {
     var m = r.marks[it.no] || {}, s = st[it.st]; if (!s) return;
@@ -1052,7 +1104,7 @@ function createRecords() {
   var dt = prefixDate(ps.prefix) || today(), made = [];
   for (var i = 0; i < n; i++) {
     var seq = ps.start + i;
-    made.push({ id: uid(), deviceKey: nw.dev, date: dt, serial: ps.prefix ? ps.prefix + String(seq).padStart(3, "0") : "", workOrder: nw.wo || "", operator: "", qc: "", batch: n > 1 ? ps.prefix : "", seq: seq, marks: {}, ncr: [], fire: [], createdAt: Date.now() + i });
+    made.push({ id: uid(), deviceKey: nw.dev, date: dt, serial: ps.prefix ? ps.prefix + String(seq).padStart(3, "0") : "", workOrder: nw.wo || "", operator: "", qc: "", batch: n > 1 ? ps.prefix : "", seq: seq, chkv: CHKV, marka: "varmeks", pazar: "yi", marks: {}, ncr: [], fire: [], createdAt: Date.now() + i });
   }
   S.records = made.concat(S.records); save();
   ui.nw.ser = ""; ui.nw.n = 1;
@@ -1089,7 +1141,7 @@ function batches(recs) {
     b.fire = R.reduce(function (a, r) { return a + (r.fire || []).length; }, 0);
     R.forEach(function (r) {
       (r.ncr || []).forEach(function (n) { var s = normStation(n.alinan || n.farkedilen); if (s) st[s] = (st[s] || 0) + 1; });
-      if (!(r.ncr || []).length) itemsFor(r.deviceKey).forEach(function (it) { var m = r.marks[it.no] || {}; if (m.op === "NOK" || m.qc === "NOK") st[it.st] = (st[it.st] || 0) + 1; });
+      if (!(r.ncr || []).length) itemsFor(r).forEach(function (it) { var m = r.marks[it.no] || {}; if (m.op === "NOK" || m.qc === "NOK") st[it.st] = (st[it.st] || 0) + 1; });
       var hv = num((r.marks["41"] || {}).val), cv = num((r.marks["42"] || {}).val);
       if (hv !== null && hv > 0 && hv < 100) h.push(hv); if (cv !== null && cv > 0 && cv < 100) c.push(cv);
     });
@@ -1284,7 +1336,7 @@ function hzMount() {
 /* ---------------- KONTROL KARTLARI: liste ---------------- */
 function recRow(r) {
   var e = evalRec(r);
-  return '<button class="rec-row" data-act="open" data-id="' + r.id + '"><div><div class="serial">' + esc(r.serial || "Seri girilmedi") + '</div><div class="small muted">' + esc(devLabel(r.deviceKey)) + ', ' + trDate(r.date) + (r.workOrder ? ", İE " + esc(r.workOrder) : "") + '</div></div>' +
+  return '<button class="rec-row" data-act="open" data-id="' + r.id + '"><div><div class="serial">' + esc(r.serial || "Seri girilmedi") + '</div><div class="small muted">' + esc(devLabel(r.deviceKey)) + ', ' + trDate(r.date) + (r.workOrder ? ", İE " + esc(r.workOrder) : "") + ((brandCtx(r).oem || brandCtx(r).yd) ? ' <span class="chip brand alt">' + esc(brandTag(r)) + '</span>' : '') + ((r.degisim || []).length ? ' <span class="chip M">etiket değişti</span>' : '') + '</div></div>' +
     '<div class="hide-m">' + lineStrip(e.stState) + '</div><div>' + (r.closedAt ? '<span class="st ok">Kapatıldı</span>' : stBadge(e.status)) + '</div><div class="hide-m mono small" style="text-align:right">%' + e.pct + '</div></button>';
 }
 function viewList() {
@@ -1317,7 +1369,7 @@ function viewList() {
 }
 
 /* ---------------- YENİ SERİ ---------------- */
-function nsState() { if (!ui.ns) ui.ns = { dev: "18kW", date: today(), n: 10, wo: "", op: "", qc: "", done: null }; return ui.ns; }
+function nsState() { if (!ui.ns) ui.ns = { dev: "18kW", date: today(), n: 10, wo: "", op: "", qc: "", marka: "varmeks", pazar: "yi", done: null }; return ui.ns; }
 function nsCalc() {
   var ns = nsState(), p = String(ns.date || today()).split("-"), prefix = p[0].slice(2) + p[1] + p[2], mx = 0;
   S.records.forEach(function (r) { var s = String(r.serial || ""); if (s.length >= 9 && s.slice(0, 6) === prefix) mx = Math.max(mx, parseInt(s.slice(6), 10) || 0); });
@@ -1325,35 +1377,49 @@ function nsCalc() {
 }
 function viewYeni() {
   var ns = nsState(), c = nsCalc(), pad = function (x) { return String(x).padStart(3, "0"); };
-  var D = CHK_DEVICES.find(function (d) { return d.key === ns.dev; }) || CHK_DEVICES[0], L = LOOK[ns.dev] || LOOK["8kW"], nItems = itemsFor(ns.dev).filter(function (x) { return !x.rec; }).length, gt = gasTarget(ns.dev);
+  var D = CHK_DEVICES.find(function (d) { return d.key === ns.dev; }) || CHK_DEVICES[0], L = LOOK[ns.dev] || LOOK["8kW"], nsr = { deviceKey: ns.dev, chkv: CHKV, marka: ns.marka || "varmeks", pazar: ns.pazar || "yi" }, nItems = itemsFor(nsr).filter(function (x) { return !x.rec; }).length, gt = gasTarget(ns.dev);
   var models = CHK_DEVICES.map(function (d) { var on = d.key === ns.dev, l = LOOK[d.key] || LOOK["8kW"]; return '<button data-act="nsdev" data-v="' + d.key + '" aria-pressed="' + on + '" style="' + (on ? 'background:' + l.bg + ';color:' + l.fg : '') + '"><b>' + esc(kwOf(d.key)) + '</b><small>' + esc(d.model) + '</small><span>' + esc(d.doc) + ' · ' + itemsFor(d.key).filter(function (x) { return !x.rec; }).length + ' madde</span></button>'; }).join("");
   var serials = []; for (var i = c.from; i <= c.to; i++) serials.push('<div><span class="s">' + c.prefix + '<b style="font-weight:500">' + pad(i) + '</b></span><small>0 / ' + nItems + ' · boş</small></div>');
   var done = ns.done;
   return '<button class="back" data-act="nav" data-v="kontrol">← Kontrol kartları</button><h1>Yeni seri aç<span class="g">.</span></h1><p class="lead">Model, tarih ve adedi seçin; seri numaraları ve her cihazın boş kontrol kartı kendiliğinden hazırlanır.</p>' +
     '<div class="ns"><div class="form">' +
       '<div><div class="step-h"><span class="n">01</span><h2>Model</h2></div><div class="mcards">' + models + '</div></div>' +
-      '<div><div class="step-h"><span class="n">02</span><h2>Tarih ve adet</h2></div><div class="row" style="align-items:flex-end;gap:16px">' +
+      brandStep(ns, nsr) + '<div><div class="step-h"><span class="n">03</span><h2>Tarih ve adet</h2></div><div class="row" style="align-items:flex-end;gap:16px">' +
         '<div><label class="lb" for="nsdate">Üretim tarihi</label><input id="nsdate" class="in" type="date" value="' + esc(ns.date) + '" data-f="ns.date" data-rr="1" style="min-width:190px"></div>' +
         '<div><span class="lb">Cihaz adedi</span><div class="stepper"><button data-act="nsn" data-v="-1" aria-label="Bir azalt">−</button><span>' + ns.n + '</span><button data-act="nsn" data-v="1" aria-label="Bir artır">+</button></div></div>' +
         '<div class="row" style="gap:6px">' + [5, 10, 20].map(function (q) { return '<button class="btn sm" data-act="nsset" data-v="' + q + '">' + q + ' cihaz</button>'; }).join("") + '</div></div>' +
         '<div class="serinfo"><div class="row" style="gap:8px"><span>Seri numarası</span><span class="mono"><b>' + c.p[0].slice(2) + '</b> yıl <b>' + c.p[1] + '</b> ay <b>' + c.p[2] + '</b> gün <b>' + pad(c.from) + '</b> o günün sırası</span></div>' +
         '<div style="margin-top:6px;color:' + (c.taken ? 'var(--warn)' : 'var(--ink2)') + '">' + (c.taken ? 'Bu tarihte ' + c.taken + ' cihaz zaten açılmış (' + c.prefix + '001–' + pad(c.taken) + '); numaralar ' + pad(c.from) + '\'ten devam eder, çakışma olmaz.' : 'Bu tarihte açılmış cihaz yok; numaralar 001\'den başlar.') + '</div></div></div>' +
-      '<div><div class="step-h"><span class="n">03</span><h2>Ekip <span class="small muted" style="font-weight:400">· isteğe bağlı, sonra da girilebilir</span></h2></div><div class="row" style="align-items:flex-end">' +
+      '<div><div class="step-h"><span class="n">04</span><h2>Ekip <span class="small muted" style="font-weight:400">· isteğe bağlı, sonra da girilebilir</span></h2></div><div class="row" style="align-items:flex-end">' +
         '<div><label class="lb" for="nswo">İş emri no</label><input id="nswo" class="in" style="width:200px;border-radius:999px" value="' + esc(ns.wo) + '" data-f="ns.wo"></div>' +
         '<div><label class="lb" for="nsop">Operatör</label><input id="nsop" class="in" style="width:200px;border-radius:999px" value="' + esc(ns.op) + '" data-f="ns.op" list="qcNames" autocomplete="off"></div>' +
         '<div><label class="lb" for="nsqc">Kalite sorumlusu</label><input id="nsqc" class="in" style="width:200px;border-radius:999px" value="' + esc(ns.qc) + '" data-f="ns.qc" list="qcNames" autocomplete="off"></div></div>' +
         '<p class="small muted" style="margin-top:8px">Burada girilen adlar serinin bütün kartlarına yazılır; tek tek kartta değiştirilebilir.</p></div>' +
     '</div><div class="prev">' +
       '<div class="hz-card" style="background:' + L.bg + '"><div class="hz-plate" style="background:' + L.plate + ';color:' + L.fg + '"><b>VARM UP<br>' + esc(kwOf(ns.dev)) + '</b><small>' + esc(D.model) + '<br>' + esc(D.doc) + '</small><hr><em>R32' + (gt ? ' · ' + gt + ' g' : '') + '</em></div>' +
-        '<div class="hz-info"><div class="hz-kick">YENİ SERİ · ' + c.prefix + '</div><div class="hz-ttl">' + ns.n + ' cihaz</div><div class="hz-by">' + trDate(ns.date) + ' · ' + ns.n * nItems + ' kontrol maddesi</div><div class="hz-barw"></div><div class="hz-pl"><span>0 / ' + ns.n + ' kontrol edildi</span><span>bandın sonuna eklenir</span></div></div></div>' +
+        '<div class="hz-info"><div class="hz-kick">YENİ SERİ · ' + c.prefix + ' · ' + esc(brandTag(nsr)) + '</div><div class="hz-ttl">' + ns.n + ' cihaz</div><div class="hz-by">' + trDate(ns.date) + ' · ' + ns.n * nItems + ' kontrol maddesi</div><div class="hz-barw"></div><div class="hz-pl"><span>0 / ' + ns.n + ' kontrol edildi</span><span>bandın sonuna eklenir</span></div></div></div>' +
       '<div class="panel"><div class="between eyebrow" style="text-transform:none"><span>AÇILACAK KARTLAR</span><span>' + c.prefix + pad(c.from) + ' – ' + pad(c.to) + '</span></div><div class="sgrid">' + serials.join("") + '</div></div>' +
       (done ? '<div class="done" role="status"><b>Seri ' + esc(done.prefix) + ' açıldı.</b> ' + done.n + ' kontrol kartı hazır; panelde bandın sonuna eklendi.<div class="row" style="margin-top:12px"><button class="btn pri" data-act="open" data-id="' + done.first + '">İlk kartı aç · ' + esc(done.firstSerial) + '</button><button class="btn" data-act="nav" data-v="panel">Panele dön</button></div></div>' :
         '<button class="btn pri" data-act="nscreate" style="min-height:56px;font-size:16px;justify-content:center">' + ns.n + ' kontrol kartı aç</button>') +
     '</div></div>';
 }
+function brandOpts(sel) { return '<option value="varmeks"' + (!sel || sel === "varmeks" ? " selected" : "") + '>Varmeks</option>' + (oemList().length ? '<optgroup label="OEM">' + oemList().map(function (f) { return '<option value="' + esc(f.id) + '"' + (f.id === sel ? " selected" : "") + '>' + esc(f.ad || "Adsız firma") + '</option>'; }).join("") + '</optgroup>' : "") + (sel && sel !== "varmeks" && !oemById(sel) ? '<option value="' + esc(sel) + '" selected>Silinmiş firma</option>' : ""); }
+function pazarOpts(sel) { return PAZAR.map(function (p) { return '<option value="' + p[0] + '"' + ((sel || "yi") === p[0] ? " selected" : "") + '>' + p[1] + '</option>'; }).join(""); }
+function labelSummary(rr) {
+  var its = itemsFor(rr).filter(function (x) { return /^(46\.|48$|50$)/.test(x.no); });
+  return '<ul class="lsum">' + its.map(function (x) { return '<li><span class="mono">' + esc(x.no) + '</span> ' + esc(x.p) + (x.exp ? ' · <b>' + esc(x.exp) + '</b>' : '') + '</li>'; }).join("") + (its.skip || []).map(function (x) { return '<li class="off">' + esc(x) + ' · bu cihazda yok</li>'; }).join("") + '</ul>';
+}
+function brandStep(ns, nsr) {
+  var firms = oemList();
+  var bb = [["varmeks", "Varmeks"]].concat(firms.map(function (f) { return [f.id, f.ad || "Adsız firma"]; })).map(function (x) { return '<button data-act="nsmarka" data-v="' + esc(x[0]) + '" aria-pressed="' + ((ns.marka || "varmeks") === x[0]) + '">' + esc(x[1]) + '</button>'; }).join("");
+  var pb = PAZAR.map(function (p) { return '<button data-act="nspazar" data-v="' + p[0] + '" aria-pressed="' + ((ns.pazar || "yi") === p[0]) + '">' + p[1] + '</button>'; }).join("");
+  return '<div><div class="step-h"><span class="n">02</span><h2>Marka ve pazar</h2></div><div class="row" style="gap:14px;align-items:flex-start"><div><span class="lb">Marka</span><div class="seg-btns">' + bb + '</div></div><div><span class="lb">Pazar</span><div class="seg-btns">' + pb + '</div></div></div>' +
+    (firms.length ? '' : '<p class="small muted" style="margin:8px 0 0">OEM firmaları Veri ve ayarlar → <b>Marka ve etiketler</b> bölümünden eklenir.</p>') +
+    '<div class="serinfo" style="margin-top:10px"><span>Final kontrolde bu seride beklenen etiketler</span>' + labelSummary(nsr) + '</div></div>';
+}
 function nsCreate() {
   var ns = nsState(), c = nsCalc(), made = [];
-  for (var i = c.from; i <= c.to; i++) made.push({ id: uid(), deviceKey: ns.dev, date: ns.date, serial: c.prefix + String(i).padStart(3, "0"), workOrder: ns.wo || "", operator: ns.op || "", qc: ns.qc || "", batch: c.prefix, seq: i, marks: {}, ncr: [], fire: [], createdAt: Date.now() + i });
+  for (var i = c.from; i <= c.to; i++) made.push({ id: uid(), deviceKey: ns.dev, date: ns.date, serial: c.prefix + String(i).padStart(3, "0"), workOrder: ns.wo || "", operator: ns.op || "", qc: ns.qc || "", batch: c.prefix, seq: i, chkv: CHKV, marka: ns.marka || "varmeks", pazar: ns.pazar || "yi", marks: {}, ncr: [], fire: [], createdAt: Date.now() + i });
   S.records = made.concat(S.records); save();
   ns.done = { prefix: c.prefix, n: made.length, first: made[0].id, firstSerial: made[0].serial };
   toast(made.length + " kontrol kartı açıldı.");
@@ -1375,7 +1441,7 @@ function viewDetail(r) {
   var nItems = e.items.length, doneItems = e.items.filter(function (it) { var m = r.marks[it.no] || {}; return m.op && m.qc; }).length;
   var ncrN = (r.ncr || []).length, fireN = (r.fire || []).length;
   var head = '<button class="back" data-act="back">← ' + esc(r.batch ? r.batch + " serisi" : "Kontrol kartları") + '</button>' +
-    '<div class="cardhead"><div class="l"><p class="eyebrow" style="margin:6px 0 0">Kontrol kartı · ' + esc(D.doc || "") + ' · ' + esc(D.label || r.deviceKey) + '</p><h1>' + serialHtml(r.serial) + '</h1><p class="meta">' + esc(D.model || "") + ' · ' + trDate(r.date) + ' · ' + nItems + ' madde · ' + (r.workOrder ? "İE " + esc(r.workOrder) : "iş emri girilmedi") + (r.closedAt ? ' · <span class="st ok" style="vertical-align:middle">Kapatıldı</span>' : '') + '</p>' + (r.touchedAt ? '<p class="lastedit">Son değişiklik: ' + esc(r.touchedOn || "") + (r.touchedBy ? " · " + esc(r.touchedBy) : "") + " · " + ago(r.touchedAt) + '</p>' : '') + '</div>' +
+    '<div class="cardhead"><div class="l"><p class="eyebrow" style="margin:6px 0 0">Kontrol kartı · ' + esc(D.doc || "") + ' · ' + esc(D.label || r.deviceKey) + '</p><h1>' + serialHtml(r.serial) + '</h1><p class="meta">' + esc(D.model || "") + ' · ' + trDate(r.date) + ' · ' + nItems + ' madde · <span class="chip brand' + (brandCtx(r).oem || brandCtx(r).yd ? ' alt' : '') + '">' + esc(brandTag(r)) + '</span> · ' + (r.workOrder ? "İE " + esc(r.workOrder) : "iş emri girilmedi") + (r.closedAt ? ' · <span class="st ok" style="vertical-align:middle">Kapatıldı</span>' : '') + '</p>' + (r.touchedAt ? '<p class="lastedit">Son değişiklik: ' + esc(r.touchedOn || "") + (r.touchedBy ? " · " + esc(r.touchedBy) : "") + " · " + ago(r.touchedAt) + '</p>' : '') + '</div>' +
     '<div class="people"><label>Operatör<input class="in" value="' + esc(r.operator || "") + '" data-f="rec.operator" list="qcNames" autocomplete="off" placeholder="Ad Soyad"></label><label>Kalite<input class="in" value="' + esc(r.qc || "") + '" data-f="rec.qc" list="qcNames" autocomplete="off" placeholder="Ad Soyad"></label><div style="display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--muted)"><span>A4 karttan aktar</span><button class="btn pri" data-act="allcard" style="min-height:44px">✓ Tümünü uygun işaretle</button></div></div></div>';
   var tabs = '<div class="tabs" role="tablist" style="margin-top:22px">' + [["liste", "Kontrol listesi"], ["ncr", "Uygunsuzluk ve fire" + (ncrN + fireN ? " (" + (ncrN + fireN) + ")" : "")]].map(function (t) { return '<button role="tab" data-act="tab" data-v="' + t[0] + '" aria-selected="' + (ui.tab === t[0] || (t[0] === "ncr" && ui.tab === "fire")) + '">' + t[1] + '</button>'; }).join("") + '</div>';
   if (ui.tab === "ncr" || ui.tab === "fire") return head + tabs + '<h2>Uygunsuzluk kayıtları</h2>' + viewNcr(r) + '<h2 style="margin-top:28px">Fire</h2>' + viewFire(r);
@@ -1402,7 +1468,8 @@ function viewDetail(r) {
   });
   var body = CHK_STATIONS.map(function (s) {
     var its = shown.filter(function (it) { return it.st === s; }); if (!its.length) return "";
-    return '<div class="sgrp"><div class="sgrp-h"><h3>' + esc(s) + '</h3><span class="ct">' + st[s].d + ' / ' + st[s].n + ' tamam</span></div>' + its.map(function (it) { return itemRow(r, it); }).join("") + '</div>';
+    var sk = s === "Final Kontrol Test İstasyonu" && (e.items.skip || []).length ? '<div class="skipn">' + esc(brandTag(r)) + ' · bu cihazda yok: ' + esc(e.items.skip.join(", ")) + '</div>' : '';
+    return '<div class="sgrp"><div class="sgrp-h"><h3>' + esc(s) + '</h3><span class="ct">' + st[s].d + ' / ' + st[s].n + ' tamam</span></div>' + sk + its.map(function (it) { return itemRow(r, it); }).join("") + '</div>';
   }).join("") || '<div class="empty">Bu filtrede madde yok.</div>';
   var items = '<div class="citems"><div class="ihead"><span>NO</span><span>KONTROL · KRİTER</span><span>OPERATÖR</span><span>KALİTE</span></div>' + body + '</div>';
 
@@ -1414,6 +1481,8 @@ function viewDetail(r) {
   var warnVals = e.items.filter(function (it) { return needsVal(it) && !String((r.marks[it.no] || {}).val || "").trim(); }).map(function (it) { return it.p.toLocaleLowerCase("tr"); });
   var unrec = e.nok.filter(function (it) { return !(r.ncr || []).some(function (n) { return String(n.item) === String(it.no); }); }).length;
   if (unrec) missing.push(unrec + " NOK maddenin kaydı yok");
+  var selDiff = e.items.filter(function (it) { var m = r.marks[it.no] || {}; return it.opts && m.sel && m.sel !== it.exp && m.op !== "NOK" && m.qc !== "NOK"; }).length;
+  if (selDiff) missing.push(selDiff + " etikette beklenenden farklı seçim (düzeltin ya da NOK verin)");
   var recs = (r.ncr || []).map(function (n) {
     var fs = (r.fire || []).filter(function (f) { return f.ncrId === n.id; });
     return '<div class="ri"><div class="row" style="gap:8px"><span class="mono small">' + esc(n.item ? "Madde " + n.item : "Madde dışı") + '</span><b style="font-weight:600">' + esc(n.tip ? tipAd(n.tip) : (n.hata || "—")) + '</b></div><div class="muted">' + esc(stShort(n.alinan) || "—") + ' → ' + esc(stShort(n.farkedilen) || "—") + (n.sinif ? ' · ' + esc(n.sinif) : '') + (fs.length ? ' · <span style="color:var(--warn);font-weight:500">fire ' + fs.length + '</span>' : '') + '</div></div>';
@@ -1423,12 +1492,63 @@ function viewDetail(r) {
     '<div class="darkc"><div class="eyebrow">Ölçümler</div><div class="g3"><div><b>' + mv("33") + '</b><span>gaz, g' + (gt ? ' · ' + gt : '') + '</span></div><div><b>' + mv("41") + '</b><span>ısıtma, kW</span></div><div><b>' + mv("42") + '</b><span>soğutma, kW</span></div></div></div>' +
     '<div class="panel white reclist"><div class="row"><h3 style="margin:0">Uygunsuzluk ve fire</h3><span class="chip" style="margin-left:auto">' + ncrN + ' kayıt · ' + fireN + ' fire</span></div><p class="small muted" style="margin:6px 0 0">Bir maddeye NOK verince kayıt formu o maddenin altında açılır. Fire, uygunsuzluğun sonucu olarak aynı formda girilir.</p>' + recs +
       '<button class="btn sm" data-act="ncrfree" style="margin-top:12px;width:100%;justify-content:center;border-style:dashed">+ Maddeye bağlı olmayan hata</button>' + (ncrN || fireN ? '<button class="btn sm ghost" data-act="tab" data-v="ncr" style="margin-top:6px;width:100%;justify-content:center">Kayıtları ayrıntılı düzenle</button>' : '') + '</div>' +
-    '<div class="panel"><div class="eyebrow" style="margin-bottom:10px">Kart bilgileri</div><div class="stack" style="--g:10px">' + fld("Tarih", "rec.date", r.date, "date") + fld("Seri numarası", "rec.serial", r.serial) + fld("İş emri", "rec.workOrder", r.workOrder) + '</div></div>' +
+    '<div class="panel"><div class="eyebrow" style="margin-bottom:10px">Kart bilgileri</div><div class="stack" style="--g:10px">' + fld("Tarih", "rec.date", r.date, "date") + fld("Seri numarası", "rec.serial", r.serial) + fld("İş emri", "rec.workOrder", r.workOrder) +
+      '<div class="grid2" style="gap:8px"><div><label class="lb" for="f_marka">Marka</label><select id="f_marka" class="in" data-f="rec.marka"' + (r.closedAt ? ' disabled' : '') + '>' + brandOpts(r.marka) + '</select></div><div><label class="lb" for="f_pazar">Pazar</label><select id="f_pazar" class="in" data-f="rec.pazar"' + (r.closedAt ? ' disabled' : '') + '>' + pazarOpts(r.pazar) + '</select></div></div>' +
+      '</div><button class="btn sm" data-act="dgopen" style="margin-top:12px;width:100%;justify-content:center">Etiket / marka değişimi</button><p class="small muted" style="margin:6px 0 0">' + (r.closedAt ? 'Kapatılmış cihaz başka markaya, yurt dışına ya da yeniden etiketlemeye giderse buradan kaydedin.' : 'Sevk öncesi marka ya da pazar değişirse buradan kaydedin; eski hâl saklanır.') + '</p>' + dgHistory(r) + '</div>' +
     (r.closedAt ? '<button class="btn" data-act="reopen" style="justify-content:center;min-height:50px">Kartı yeniden aç</button><p class="small muted" style="text-align:center;margin:-6px 0 0">' + new Date(r.closedAt).toLocaleString("tr-TR") + ' tarihinde kapatıldı.</p>' :
       '<button class="closebtn" data-act="closecard"' + (missing.length ? ' disabled' : '') + '>Kartı kapat</button><p class="small muted" style="text-align:center;margin:-6px 0 0">' + (missing.length ? 'Kapatmak için: ' + esc(missing.join(" · ")) : 'Kart kapatılabilir.') + (warnVals.length ? '<br><span style="color:var(--warn)">Girilmemiş ölçüm: ' + esc(warnVals.join(", ")) + '</span>' : '') + '</p>') +
     '<div class="row" style="justify-content:center"><button class="btn sm" data-act="print">Yazdır (PDF)</button><button class="btn sm danger" data-act="delrec">Kartı sil</button></div>' +
     '</aside>';
-  return head + tabs + tool + '<div class="cbody">' + rail + items + side + '</div>';
+  var legacy = !brandCtx(r).v2 ? '<div class="cnotice"><div><b>Bu kart eski etiket maddesiyle açılmış.</b> 46. madde tek satır. Yeni yapıda etiketler ayrı ayrı işaretlenir, marka ve pazara göre değişir, QC Pass listenin sonuna gelir.</div><button class="btn sm" data-act="chkup">Yeni etiket maddelerine geç</button></div>' : '';
+  return head + tabs + (ui.dg && ui.dg.rid === r.id ? dgForm(r) : '') + legacy + tool + '<div class="cbody">' + rail + items + side + '</div>';
+}
+function dgWho() { return (US.me && US.me.ad) || (cloud.user && cloud.user.email) || ""; }
+function dgOpen(r) { ui.dg = { rid: r.id, marka: r.marka || "varmeks", pazar: r.pazar || "yi", sebep: "", acildi: "", not: "" }; }
+function dgForm(r) {
+  var d = ui.dg, to = { deviceKey: r.deviceKey, chkv: CHKV, marka: d.marka, pazar: d.pazar, degisim: d.acildi === "evet" ? [{ acildi: true }] : [] };
+  var same = (d.marka === (r.marka || "varmeks")) && (d.pazar === (r.pazar || "yi"));
+  var chip = function (act, v, cur, t) { return '<button data-act="' + act + '" data-v="' + esc(v) + '" aria-pressed="' + (cur === v) + '">' + esc(t) + '</button>'; };
+  return '<div class="panel dgf"><div class="between"><div><div class="eyebrow">Etiket / marka değişimi · ' + esc(r.serial || "") + '</div><h2 style="margin:4px 0 0">' + esc(brandTag(r)) + ' → ' + esc(brandTag(to)) + '</h2></div><button class="btn sm ghost" data-act="dgcancel">Vazgeç</button></div>' +
+    '<div class="row" style="gap:14px;align-items:flex-end;margin-top:12px"><div><label class="lb" for="dgm">Yeni marka</label><select id="dgm" class="in" data-f="dg.marka">' + brandOpts(d.marka) + '</select></div><div><label class="lb" for="dgp">Yeni pazar</label><select id="dgp" class="in" data-f="dg.pazar">' + pazarOpts(d.pazar) + '</select></div></div>' +
+    '<div style="margin-top:12px"><span class="lb">Neden</span><div class="seg-btns">' + DG_SEBEP.map(function (x) { return chip("dgsebep", x, d.sebep, x); }).join("") + '</div></div>' +
+    '<div style="margin-top:12px"><span class="lb">Cihaz açıldı mı?</span><div class="seg-btns">' + chip("dgacildi", "hayir", d.acildi, "Hayır, yalnız dış etiket / kutu") + chip("dgacildi", "evet", d.acildi, "Evet, panel / kapak söküldü") + '</div></div>' +
+    '<div style="margin-top:12px"><label class="lb" for="dgn">Not (sipariş no, ülke, müşteri…)</label><input id="dgn" class="in" data-f="dg.not" value="' + esc(d.not) + '"></div>' +
+    '<div class="serinfo" style="margin-top:12px"><span>Kaydedince bu maddeler boşaltılır ve yeniden işaretlenir:</span>' + labelSummary(to) + (d.acildi === "evet" ? '<p class="small" style="margin:6px 0 0">Cihaz açıldığı için iki ek madde gelir: panel / kapak vidaları ve kasa / kablo kontrolü.</p>' : '') + '</div>' +
+    '<div class="row" style="margin-top:12px"><button class="btn pri" data-act="dgsave"' + (!d.sebep || !d.acildi ? ' disabled' : '') + '>Değişimi kaydet' + (r.closedAt ? ' ve kartı yeniden aç' : '') + '</button><span class="small muted">' + (!d.sebep || !d.acildi ? 'Neden ve açılma durumunu seçin.' : same ? 'Marka ve pazar aynı kalıyor: yeniden etiketleme olarak kaydedilir.' : '') + '</span></div></div>';
+}
+function dgSave(r) {
+  var d = ui.dg; if (!r || !d || !d.sebep || !d.acildi) return;
+  var nos = LABEL_NOS.concat(["D1", "D2", "46"]), eski = {};
+  nos.forEach(function (no) { if (r.marks[no]) eski[no] = r.marks[no]; });
+  r.degisim = r.degisim || [];
+  var ent = { id: uid(), at: Date.now(), by: dgWho(), from: { marka: r.marka || "varmeks", pazar: r.pazar || "yi", ad: brandTag(r) }, sebep: d.sebep, acildi: d.acildi === "evet", not: d.not || "", eski: eski, kapaliydi: r.closedAt || null };
+  r.chkv = CHKV; r.marka = d.marka; r.pazar = d.pazar;
+  ent.to = { marka: r.marka, pazar: r.pazar, ad: brandTag(r) };
+  r.degisim.push(ent);
+  LABEL_NOS.concat(["D1", "D2"]).forEach(function (no) { if (r.marks[no]) r.marks[no] = r.marks[no].val ? { val: r.marks[no].val } : {}; });
+  delete r.closedAt; ui.dg = null; ui.selMap = ui.selMap || {}; ui.selMap[r.id] = "Final Kontrol Test İstasyonu"; ui.cf = "all";
+  save(); toast("Değişim kaydedildi. Final etiket maddelerini yeniden işaretleyin.");
+}
+function dgHistory(r) {
+  var d = r.degisim || []; if (!d.length) return "";
+  return '<div class="dgh"><div class="eyebrow" style="margin:14px 0 6px">Değişim geçmişi</div>' + d.slice().reverse().map(function (x) {
+    return '<div class="ri"><div class="row" style="gap:6px"><b style="font-weight:600">' + esc((x.from || {}).ad || "") + ' → ' + esc((x.to || {}).ad || "") + '</b></div><div class="muted">' + new Date(x.at).toLocaleString("tr-TR", { dateStyle: "short", timeStyle: "short" }) + ' · ' + esc(x.sebep) + (x.acildi ? ' · cihaz açıldı' : '') + (x.kapaliydi ? ' · kapalı karttan' : '') + (x.by ? ' · ' + esc(x.by) : '') + (x.not ? '<br>' + esc(x.not) : '') + '</div></div>';
+  }).join("") + '</div>';
+}
+function oemPanel() {
+  var L = S.settings.oem || [];
+  var rows = L.map(function (f) {
+    var used = S.records.filter(function (r) { return r.marka === f.id; }).length;
+    return '<div class="oemr"><input class="in" placeholder="Firma adı" value="' + esc(f.ad || "") + '" data-f="oem.' + esc(f.id) + '.ad" aria-label="Firma adı">' +
+      '<input class="in" placeholder="Marka etiketi (boşsa yok)" value="' + esc(f.etiket || "") + '" data-f="oem.' + esc(f.id) + '.etiket" aria-label="Marka etiketi">' +
+      '<input class="in" placeholder="Kutu (boşsa pazara göre)" value="' + esc(f.kutu || "") + '" data-f="oem.' + esc(f.id) + '.kutu" aria-label="Kutu">' +
+      '<input class="in" placeholder="Gri etiket (boşsa pazara göre)" value="' + esc(f.gri || "") + '" data-f="oem.' + esc(f.id) + '.gri" aria-label="Gri etiket">' +
+      '<label class="row small" style="gap:6px;cursor:pointer;white-space:nowrap"><input type="checkbox" data-act="oemsrv" data-v="' + esc(f.id) + '"' + (f.servis ? ' checked' : '') + '> Hızlı Servis etiketi var</label>' +
+      '<button class="btn sm danger" data-act="oemdel" data-v="' + esc(f.id) + '"' + (used ? ' disabled title="' + used + ' kartta kullanılıyor"' : '') + '>Sil</button></div>';
+  }).join("");
+  return '<div class="panel" style="margin-top:16px"><h2>Marka ve etiketler</h2><p class="muted">Final kontroldeki etiket maddeleri kartın markasına ve pazarına göre değişir. Varmeks yurt içi: Elektrik sarı, gri etiket, Hızlı Servis, Varmeks Şeffaf PP, standart kutu, QC Pass. Yurt dışı: Hızlı Servis ve Varmeks PP yok; kutu ve gri etiket yurt dışı türü. OEM firması: aşağıda yazdığınız marka etiketi, kutu ve gri etiket beklenir.</p>' +
+    '<div class="oemh small muted"><span>Firma</span><span>Marka etiketi</span><span>Kutu</span><span>Gri etiket</span><span></span><span></span></div>' + (rows || '<div class="small muted" style="padding:8px 0">Henüz OEM firması eklenmedi.</div>') +
+    '<button class="btn sm" data-act="oemadd" style="margin-top:10px">+ OEM firması ekle</button></div>';
 }
 function fld(label, path, val, type) { var id = "f_" + path.replace(/\W/g, ""); return '<div><label class="lb" for="' + id + '">' + label + '</label><input id="' + id + '" class="in" ' + (type ? 'type="' + type + '" ' : "") + 'value="' + esc(val || "") + '" data-f="' + path + '"></div>'; }
 function itemRow(r, it) {
@@ -1443,7 +1563,9 @@ function itemRow(r, it) {
     return '<div class="ncrstrip"><span class="cd">NCR</span><b style="font-weight:600">' + esc(n.tip ? tipAd(n.tip) : (n.hata || "Uygunsuzluk")) + '</b>' + (n.sinif ? '<span class="row" style="gap:6px"><i class="dotc" style="background:' + (SDOT[n.sinif] || "#BDBDBD") + '"></i>' + esc(n.sinif) + '</span>' : '') + '<span class="muted">' + esc(stShort(n.alinan)) + ' → ' + esc(stShort(n.farkedilen)) + '</span><span class="res" style="color:' + (fs.length ? 'var(--warn)' : 'var(--ok-ink)') + '">' + esc(res ? res[1] : (n.durum || "Açık")) + (fs.length ? ' · fire ' + fs.length : '') + '</span></div>';
   }).join("");
   var nf = ui.nf && ui.nf.rid === r.id && String(ui.nf.no) === String(it.no) ? nfForm(r, it) : "";
-  var chips = (it.crit === "K" ? '<span class="chip K">Kritik</span>' : '') + (it.rec ? '<span class="chip rec">Önerilen yeni madde</span>' : '');
+  var chips = (it.crit === "K" ? '<span class="chip K">Kritik</span>' : '') + (it.rec ? '<span class="chip rec">Önerilen yeni madde</span>' : '') + (it.dg ? '<span class="chip M">Etiket değişimi sonrası</span>' : '') + (it.last ? '<span class="chip">Listenin sonu</span>' : '');
+  if (it.opts) { var sv = m.sel || "", diff = sv && sv !== it.exp, ol = it.opts.indexOf(sv) < 0 && sv ? it.opts.concat([sv]) : it.opts;
+    meas += '<span class="meas osel"><select class="in' + (diff ? ' bad' : sv ? ' good' : '') + '" data-f="opt.' + esc(it.no) + '" aria-label="' + esc(it.p) + ': takılan"><option value="">Takılanı seçin</option>' + ol.map(function (o) { return '<option' + (o === sv ? ' selected' : '') + '>' + esc(o) + '</option>'; }).join("") + '</select><span class="m ' + (diff ? 'bad' : sv ? 'good' : '') + '">' + (diff ? 'Beklenen: ' + esc(it.exp) : sv ? 'beklenenle aynı' : 'OK verilince beklenen yazılır') + '</span></span>'; }
   return '<div class="item' + (isNok ? " isnok" : "") + '"><div class="irow"><span class="no">' + esc(it.no) + '</span><div><div class="p">' + esc(it.p) + '</div><div class="spec"><span>' + esc(it.k) + '</span>' + (it.m && it.m !== "-" ? '<span class="code">' + esc(it.m) + '</span>' : '') + chips + meas + '</div></div>' +
     '<span class="who">Operatör</span>' + mk("op") + '<span class="who">Kalite</span>' + mk("qc") + '</div>' + strips + nf + '</div>';
 }
@@ -1465,7 +1587,7 @@ function nfForm(r, it) {
 }
 function nfSave(r) {
   var nf = ui.nf; if (!nf || !r) return;
-  var it = itemsFor(r.deviceKey, true).find(function (x) { return String(x.no) === String(nf.no); }); if (!it) return;
+  var it = itemsFor(r, true).find(function (x) { return String(x.no) === String(nf.no); }); if (!it) return;
   var t = HTIP_BY[nf.tip], nd = t && t.neden.length ? t.neden[nf.why] : null, res = RES.find(function (x) { return x[0] === nf.res; });
   var n = { id: uid(), item: it.no, hata: (t ? t.ad : "Uygunsuzluk") + (nf.note ? ": " + nf.note : ""), alinan: it.st, farkedilen: nf.found, analiz: "", duzeltme: res[1] + (nf.note ? " · " + nf.note : ""), durum: nf.res === "yerinde" ? "Kapalı" : "Açık", tip: nf.tip, neden: nd ? nd[0] : "", sinif: nd ? nd[1] : nf.sinif, sonuc: nf.res };
   r.ncr = r.ncr || []; r.ncr.push(n);
@@ -1474,10 +1596,12 @@ function nfSave(r) {
   save();
 }
 function markAll(r, who, whole, silent) {
-  var e = evalRec(r), sel = whole ? "all" : (ui.sel || "all"), n = 0, skipNok = 0, skipVal = 0;
+  var e = evalRec(r), sel = whole ? "all" : (ui.sel || "all"), n = 0, skipNok = 0, skipVal = 0, skipSel = 0;
   e.items.forEach(function (it) {
     if (sel !== "all" && it.st !== sel) return;
     var m = Object.assign({}, r.marks[it.no] || {}), needs = !whole && needsVal(it) && !String(m.val || "").trim();
+    if (it.opts && m.sel && m.sel !== it.exp && (who === "both" ? !(m.op && m.qc) : !m[who])) { skipSel++; return; }
+    if (it.opts && !m.sel) m.sel = it.exp;
     ["op", "qc"].forEach(function (c) {
       if (who !== "both" && who !== c) return;
       if (m[c] === "NOK") { skipNok++; return; }
@@ -1487,7 +1611,7 @@ function markAll(r, who, whole, silent) {
     });
     r.marks[it.no] = m;
   });
-  ui.cnote = n + " onay OK işaretlendi." + (skipNok ? " NOK olanlara dokunulmadı." : "") + (skipVal ? " Ölçüm değeri girilmemiş maddeler atlandı." : "");
+  ui.cnote = n + " onay OK işaretlendi." + (skipNok ? " NOK olanlara dokunulmadı." : "") + (skipVal ? " Ölçüm değeri girilmemiş maddeler atlandı." : "") + (skipSel ? " Beklenenden farklı etiket seçilen " + skipSel + " madde atlandı." : "");
   if (!silent) save();
   return n;
 }
@@ -1747,7 +1871,7 @@ function viewVeri() {
     '<div><label class="lb" for="sperf">Isıtma kapasitesi alt sınırı (nominalin %... altı)</label><input id="sperf" class="in" type="number" step="1" value="' + s.perfTol + '" data-f="set.perfTol" data-rr="1"></div>' +
     '<p class="small muted">Varsayılan değerler başlangıç içindir; ürün spesifikasyonuna göre güncelleyin.</p>' +
     '<label class="row" style="cursor:pointer"><input type="checkbox" data-act="togrec"' + (s.showRec ? " checked" : "") + '> Önerilen yeni maddeleri kontrol listesinde göster</label></div></div></div>' +
-    (window.__QC_SEED ? '<div class="panel" style="margin-top:16px"><h2>Dosyaya gömülü veri</h2><p class="muted">Bu dosyada ' + window.__QC_SEED.records.length + ' kontrol kartı gömülü (yedek tarihi ' + window.__QC_SEED_DATE + '). Tarayıcıdaki veri boşsa otomatik yüklenir. Mevcut verinin yerine yeniden yüklemek için:</p><button class="btn" data-act="seedload">Gömülü veriyi yükle</button></div>' : '') + '<div class="panel" style="margin-top:16px"><h2>Tüm verileri sil</h2><p class="muted">Bu işlem geri alınamaz. Önce yedek alın.</p><button class="btn danger" data-act="wipe">Tüm kontrol kartlarını sil</button></div>' +
+    oemPanel() + (window.__QC_SEED ? '<div class="panel" style="margin-top:16px"><h2>Dosyaya gömülü veri</h2><p class="muted">Bu dosyada ' + window.__QC_SEED.records.length + ' kontrol kartı gömülü (yedek tarihi ' + window.__QC_SEED_DATE + '). Tarayıcıdaki veri boşsa otomatik yüklenir. Mevcut verinin yerine yeniden yüklemek için:</p><button class="btn" data-act="seedload">Gömülü veriyi yükle</button></div>' : '') + '<div class="panel" style="margin-top:16px"><h2>Tüm verileri sil</h2><p class="muted">Bu işlem geri alınamaz. Önce yedek alın.</p><button class="btn danger" data-act="wipe">Tüm kontrol kartlarını sil</button></div>' +
     '<input type="file" id="fileIn" accept=".json,application/json" style="display:none">';
 }
 
@@ -1770,7 +1894,7 @@ function printRec(r) {
   items.forEach(function (it) {
     var m = r.marks[it.no] || {}, stc = "";
     if (it.st !== last) { stc = '<td class="st" rowspan="' + items.filter(function (x) { return x.st === it.st; }).length + '">' + esc(it.st) + '</td>'; last = it.st; }
-    rows += '<tr>' + stc + '<td class="c">' + esc(it.no) + '</td><td>' + esc(it.p) + (it.rec ? " <i>(önerilen)</i>" : "") + '</td><td class="c">' + it.crit + '</td><td class="c">' + esc(it.m) + '</td><td>' + esc(it.k) + '</td><td class="c">' + esc(m.val ? m.val + " " + MEAS[it.no].u : "") + '</td><td class="c">' + markTxt(m.op) + '</td><td class="c">' + markTxt(m.qc) + '</td></tr>';
+    rows += '<tr>' + stc + '<td class="c">' + esc(it.no) + '</td><td>' + esc(it.p) + (it.rec ? " <i>(önerilen)</i>" : "") + '</td><td class="c">' + it.crit + '</td><td class="c">' + esc(it.m) + '</td><td>' + esc(it.k) + '</td><td class="c">' + esc(it.opts ? (m.sel || "") : m.val && MEAS[it.no] ? m.val + " " + MEAS[it.no].u : (m.val || "")) + '</td><td class="c">' + markTxt(m.op) + '</td><td class="c">' + markTxt(m.qc) + '</td></tr>';
   });
   var ncr = (r.ncr || []).map(function (n, i) { return '<tr><td class="c">' + (i + 1) + '</td><td class="c">' + esc(n.item || "") + '</td><td>' + esc(n.hata) + '</td><td>' + esc(n.alinan) + '</td><td>' + esc(n.farkedilen) + '</td><td>' + esc(n.analiz) + '</td><td>' + esc(n.duzeltme) + '</td><td class="c">' + esc(n.durum || "Açık") + '</td></tr>'; }).join("");
   var fire = (r.fire || []).map(function (f) { return '<tr><td>' + esc(f.code) + '</td><td class="c">' + esc(f.qty) + '</td><td>' + esc(f.station) + '</td><td>' + esc(f.explanation) + '</td></tr>'; }).join("");
@@ -1873,6 +1997,9 @@ function setField(path, val) {
   var p = path.split("."), r = curRec();
   if (p[0] === "rec" && r) r[p[1]] = val;
   else if (p[0] === "us") { if (p.length === 3) US[p[1]][p[2]] = val; else US[p[1]] = val; return false; }
+  else if (p[0] === "opt" && r) { var on = p.slice(1).join("."); r.marks[on] = Object.assign({}, r.marks[on] || {}, { sel: val }); }
+  else if (p[0] === "oem") { var fo = (S.settings.oem || []).find(function (x) { return x.id === p[1]; }); if (fo) fo[p[2]] = val; }
+  else if (p[0] === "dg") { if (ui.dg) ui.dg[p[1]] = val; return false; }
   else if (p[0] === "val" && r) { r.marks[p[1]] = Object.assign({}, r.marks[p[1]] || {}, { val: val }); }
   else if (p[0] === "ncr" && r) { var n = (r.ncr || []).find(function (x) { return x.id === p[1]; }); if (n) { n[p[2]] = val; if (p[2] === "tip" && !n.alinan && HTIP_BY[val]) n.alinan = HTIP_BY[val].st; if (p[2] === "tip") n.neden = ""; } }
   else if (p[0] === "gncr") { var gr = S.records.find(function (x) { return x.id === p[1]; }); var gn = gr && (gr.ncr || []).find(function (x) { return x.id === p[2]; }); if (gn) { gn[p[3]] = val; if (p[3] === "tip" && !gn.alinan && HTIP_BY[val]) gn.alinan = HTIP_BY[val].st; if (p[3] === "tip") gn.neden = ""; } }
@@ -1886,7 +2013,7 @@ function setField(path, val) {
   return true;
 }
 function autoEval(r, no) {
-  var it = itemsFor(r.deviceKey).find(function (x) { return x.no === no; }); if (!it) return;
+  var it = itemsFor(r).find(function (x) { return x.no === no; }); if (!it) return;
   var m = r.marks[no] || {}, ev = evalMeas(r, it, m.val);
   if (ev && ev.ok !== null && !ev.unit && !m.op) { m.op = ev.ok ? "OK" : "NOK"; r.marks[no] = m; if (m.op === "NOK" && !(r.ncr || []).some(function (n) { return String(n.item) === String(no); })) nfOpen(r, it); }
 }
@@ -1925,7 +2052,8 @@ document.addEventListener("click", function (ev) {
     case "mark":
       if (!r) return; var no = b.dataset.no, col = b.dataset.col, m = Object.assign({}, r.marks[no] || {});
       m[col] = m[col] === v ? "" : v; r.marks[no] = m; ui.cnote = "";
-      var itm = itemsFor(r.deviceKey).find(function (x) { return String(x.no) === String(no); });
+      var itm = itemsFor(r).find(function (x) { return String(x.no) === String(no); });
+      if (itm && itm.opts && m[col] === "OK" && !m.sel) m.sel = itm.exp;
       if (m[col] === "NOK" && itm && !(r.ncr || []).some(function (n) { return String(n.item) === String(no); })) nfOpen(r, itm);
       else if (ui.nf && String(ui.nf.no) === String(no) && m.op !== "NOK" && m.qc !== "NOK") ui.nf = null;
       save(); break;
@@ -1947,6 +2075,17 @@ document.addEventListener("click", function (ev) {
     case "closecard": if (!r) return; r.closedAt = Date.now(); save(); toast("Kart kapatıldı."); break;
     case "reopen": if (!r) return; delete r.closedAt; save(); break;
     case "nsdev": nsState().dev = v; nsState().done = null; break;
+    case "nsmarka": nsState().marka = v; nsState().done = null; break;
+    case "nspazar": nsState().pazar = v; nsState().done = null; break;
+    case "chkup": if (!r) return; r.chkv = CHKV; if (!r.marka) r.marka = "varmeks"; if (!r.pazar) r.pazar = "yi"; save(); toast("Kart yeni etiket maddelerine geçirildi."); break;
+    case "dgopen": if (!r) return; dgOpen(r); ui.tab = "liste"; window.scrollTo(0, 0); break;
+    case "dgcancel": ui.dg = null; break;
+    case "dgsebep": if (ui.dg) ui.dg.sebep = v; break;
+    case "dgacildi": if (ui.dg) ui.dg.acildi = v; break;
+    case "dgsave": dgSave(r); break;
+    case "oemadd": S.settings.oem = (S.settings.oem || []).concat([{ id: "o" + uid().replace(/\W/g, "").slice(0, 8), ad: "", etiket: "", kutu: "", gri: "", servis: false }]); save(); break;
+    case "oemdel": if (!confirm("OEM firması silinsin mi?")) return; S.settings.oem = (S.settings.oem || []).filter(function (x) { return x.id !== v; }); save(); break;
+    case "oemsrv": var fs2 = (S.settings.oem || []).find(function (x) { return x.id === v; }); if (fs2) { fs2.servis = !!b.checked; save(); } break;
     case "nsn": var nsx = nsState(); nsx.n = Math.max(1, Math.min(30, nsx.n + (+v))); nsx.done = null; break;
     case "nsset": nsState().n = +v; nsState().done = null; break;
     case "nscreate": nsCreate(); break;
@@ -1954,7 +2093,7 @@ document.addEventListener("click", function (ev) {
       if (!r || !confirm("Bu karttaki tüm işaretler temizlensin mi? Ölçülen değerler korunur.")) return;
       Object.keys(r.marks).forEach(function (k) { r.marks[k] = { val: r.marks[k].val }; }); save(); break;
     case "ncrfromOld":
-      if (!r) return; var it = itemsFor(r.deviceKey).find(function (x) { return x.no === b.dataset.no; });
+      if (!r) return; var it = itemsFor(r).find(function (x) { return x.no === b.dataset.no; });
       r.ncr = r.ncr || []; r.ncr.push({ id: uid(), item: it.no, hata: it.p + ": uygun değil", alinan: it.st, farkedilen: it.st, analiz: "", duzeltme: "", durum: "Açık" }); ui.tab = "ncr"; save(); window.scrollTo(0, 0); break;
     case "ncradd": if (!r) return; r.ncr = r.ncr || []; r.ncr.push({ id: uid(), item: "", hata: "", alinan: "", farkedilen: "", analiz: "", duzeltme: "", durum: "Açık" }); save(); break;
     case "ncrdel": if (!r || !confirm("Uygunsuzluk kaydı silinsin mi?")) return; r.ncr = r.ncr.filter(function (x) { return x.id !== b.dataset.id; }); save(); break;
@@ -2010,7 +2149,7 @@ if (normalizeAll()) save();
 render();
 cloudInit();
 if ("serviceWorker" in navigator && location.protocol === "https:") { window.addEventListener("load", function () { navigator.serviceWorker.register("sw.js").catch(function () {}); }); }
-window.__QC = { cloud: cloud, SYN: function () { return SYN; }, S: function () { return S; }, ui: ui, evalRec: evalRec, itemsFor: itemsFor, analysisData: analysisData };
+window.__QC = { cloud: cloud, SYN: function () { return SYN; }, S: function () { return S; }, ui: ui, evalRec: evalRec, itemsFor: itemsFor, analysisData: analysisData, render: function () { render(); } };
 })();
 
 </script>
