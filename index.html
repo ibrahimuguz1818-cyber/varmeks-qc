@@ -669,6 +669,7 @@ async function cloudStart() {
     cloud.last = new Date(); setCloud("ok");
     softRender();
     subscribe();
+    loadProfiles();
     if (dirty().n) cloudPush();
   } catch (e) {
     clearTimeout(cloud.retry); setCloud("err", errText(e)); cloud.retry = setTimeout(cloudStart, 20000);
@@ -712,11 +713,11 @@ function showLogin(err) {
   if (!el) { el = document.createElement("div"); el.id = "login"; document.body.appendChild(el); }
   el.innerHTML = '<form class="lgbox" id="lgForm" autocomplete="on"><div class="emblem">' + emblem() + '</div>' +
     '<h2>Kalite kontrol girişi</h2><p class="muted small">Kontrol kartları bulutta saklanır. Devam etmek için hesabınızla giriş yapın.</p>' +
-    '<label class="lab">E-posta<input class="in" type="email" name="email" autocomplete="username" required></label>' +
+    '<label class="lab">Kullanıcı adı veya e-posta<input class="in" type="text" name="email" autocomplete="username" autocapitalize="off" autocorrect="off" spellcheck="false" required></label>' +
     '<label class="lab">Şifre<input class="in" type="password" name="pw" autocomplete="current-password" required></label>' +
     (err ? '<p class="lgerr">' + esc(err) + '</p>' : '') +
     '<button class="btn pri" type="submit" style="width:100%">Giriş yap</button>' +
-    '<p class="muted small" style="margin-top:14px">Hesabınız yoksa yöneticiden isteyin.</p></form>';
+    '<p class="muted small" style="margin-top:14px">Hesabınız yoksa ya da parolanızı unuttuysanız yöneticinize söyleyin: Veri → Kullanıcılar sayfasından hesap açar veya yeni parola verir.</p></form>';
   el.hidden = false;
   var f = el.querySelector("input[name=email]"); if (f) f.focus();
 }
@@ -725,7 +726,7 @@ document.addEventListener("submit", function (ev) {
   if (ev.target.id === "lgForm") {
     ev.preventDefault();
     var f = ev.target, b = f.querySelector("button"); b.disabled = true; b.textContent = "Giriş yapılıyor…";
-    cloud.sb.auth.signInWithPassword({ email: f.email.value.trim(), password: f.pw.value }).then(function (r) {
+    cloud.sb.auth.signInWithPassword({ email: loginToEmail(f.email.value), password: f.pw.value }).then(function (r) {
       if (r.error) { showLogin(errText(r.error)); return; }
       cloud.user = r.data.user; hideLogin(); cloudStart();
     }).catch(function (e) { showLogin(errText(e)); });
@@ -760,6 +761,152 @@ function cloudInit() {
     cloudStart();
   });
 }
+/* ---------------- kullanıcılar ---------------- */
+var QC_DOMAIN = "qc.varmeks.local";
+function loginToEmail(x) { x = String(x || "").trim().toLocaleLowerCase("tr").replace(/ı/g, "i").replace(/ğ/g, "g").replace(/ü/g, "u").replace(/ş/g, "s").replace(/ö/g, "o").replace(/ç/g, "c"); return x.indexOf("@") > -1 ? x : x.replace(/[^a-z0-9._-]/g, "") + "@" + QC_DOMAIN; }
+function loginName(email) { email = String(email || ""); return email.slice(-QC_DOMAIN.length - 1) === "@" + QC_DOMAIN ? email.slice(0, -QC_DOMAIN.length - 1) : email; }
+var US = { me: null, profiles: [], list: null, loading: false, err: "", made: null, pwFor: null, pwVal: "", edit: null, q: "", form: { ad: "", login: "", pw: "", rol: "kullanici" }, mine: { a: "", b: "" } };
+function genPw() { var w = ["Varm", "Isi", "Kalite", "Seri", "Kart", "Hat", "Test", "Gaz"], n = Math.floor(1000 + Math.random() * 9000); return w[Math.floor(Math.random() * w.length)] + "-" + n; }
+function isAdmin() { return !!(US.me && US.me.rol === "yonetici" && US.me.aktif !== false); }
+function loadProfiles() {
+  if (!cloud.sb || !cloud.user) return Promise.resolve();
+  return cloud.sb.from("qc_profiles").select("id,email,ad,rol,aktif").then(function (r) {
+    if (r.error) return;
+    US.profiles = r.data || [];
+    US.me = US.profiles.find(function (p) { return p.id === cloud.user.id; }) || null;
+    renderNameList();
+    if (ui.view === "kullanicilar" || ui.view === "veri") softRender();
+  });
+}
+function renderNameList() {
+  var dl = document.getElementById("qcNames");
+  if (!dl) { dl = document.createElement("datalist"); dl.id = "qcNames"; document.body.appendChild(dl); }
+  var seen = {}, names = [];
+  US.profiles.forEach(function (p) { if (p.ad && !seen[p.ad]) { seen[p.ad] = 1; names.push(p.ad); } });
+  S.records.forEach(function (r) { [r.operator, r.qc].forEach(function (n) { n = String(n || "").trim(); if (n && !seen[n]) { seen[n] = 1; names.push(n); } }); });
+  dl.innerHTML = names.sort(function (a, b) { return a.localeCompare(b, "tr"); }).map(function (n) { return '<option value="' + esc(n) + '">'; }).join("");
+}
+async function usersApi(body) {
+  var r = await cloud.sb.functions.invoke("qc-users", { body: body });
+  if (r.error) {
+    var m = r.error.message || "İşlem yapılamadı";
+    try { var j = await r.error.context.json(); if (j && j.error) m = j.error; } catch (e) {}
+    if (/Failed to send|fetch/i.test(m)) m = "Sunucuya ulaşılamadı; internet bağlantısını kontrol edin.";
+    throw new Error(m);
+  }
+  if (r.data && r.data.error) throw new Error(r.data.error);
+  return r.data;
+}
+async function usersLoad() {
+  if (!isAdmin()) return;
+  US.loading = true; US.err = ""; softRender();
+  try { var d = await usersApi({ action: "list" }); US.list = d.users || []; }
+  catch (e) { US.err = e.message; }
+  US.loading = false; softRender();
+}
+async function usersDo(body, okMsg) {
+  US.err = "";
+  try { var d = await usersApi(body); if (okMsg) toast(okMsg); await usersLoad(); await loadProfiles(); return d; }
+  catch (e) { US.err = e.message; toast(e.message); softRender(); return null; }
+}
+function namesOnCards() {
+  var m = {};
+  S.records.forEach(function (r) {
+    [["operator", "Operatör"], ["qc", "Kalite"]].forEach(function (f) {
+      var n = String(r[f[0]] || "").trim(); if (!n) return;
+      var k = n.toLocaleLowerCase("tr");
+      if (!m[k]) m[k] = { ad: n, n: 0, rol: {}, last: "" };
+      m[k].n++; m[k].rol[f[1]] = 1; if (r.date > m[k].last) m[k].last = r.date;
+    });
+  });
+  return Object.keys(m).map(function (k) { return m[k]; }).sort(function (a, b) { return b.n - a.n; });
+}
+function viewKullanicilar() {
+  var me = cloud.user, adm = isAdmin();
+  if (!me) return '<h1>Kullanıcılar</h1><div class="panel empty">Bu sayfa için giriş yapmanız gerekir.</div>';
+  if (adm && !US.list && !US.loading && !US.err) setTimeout(usersLoad, 0);
+  var h = '<button class="back" data-act="nav" data-v="veri">← Veri ve ayarlar</button><h1>Kullanıcılar<span class="g">.</span></h1><p class="lead">' + (adm ? 'Kullanıcı ekleyin, unutulan parolaları yenileyin, kimin hangi adla girdiğini görün.' : 'Hesabınız ve parolanız.') + '</p>';
+  h += '<div class="grid2"><div class="panel"><h2>Hesabım</h2><table class="tbl"><tbody>' +
+    '<tr><td class="muted">Ad Soyad</td><td><b style="font-weight:600">' + esc((US.me && US.me.ad) || "—") + '</b></td></tr>' +
+    '<tr><td class="muted">Kullanıcı adı</td><td class="mono">' + esc(loginName(me.email)) + '</td></tr>' +
+    '<tr><td class="muted">Yetki</td><td>' + (adm ? '<span class="chip good">Yönetici</span>' : '<span class="chip">Kullanıcı</span>') + '</td></tr></tbody></table>' +
+    '<h3 style="margin-top:18px">Parolamı değiştir</h3><div class="row" style="align-items:flex-end"><div style="flex:1 1 160px"><label class="lb" for="mpa">Yeni parola</label><input id="mpa" class="in" type="password" autocomplete="new-password" data-f="us.mine.a"></div><div style="flex:1 1 160px"><label class="lb" for="mpb">Yeni parola (tekrar)</label><input id="mpb" class="in" type="password" autocomplete="new-password" data-f="us.mine.b"></div><button class="btn pri" data-act="mypw">Değiştir</button></div></div>';
+  if (adm) {
+    var f = US.form;
+    h += '<div class="panel"><h2>Yeni kullanıcı</h2><div class="stack">' +
+      '<div><label class="lb" for="uad">Ad Soyad</label><input id="uad" class="in" value="' + esc(f.ad) + '" data-f="us.form.ad" placeholder="ör. Ahmet Yılmaz"></div>' +
+      '<div><label class="lb" for="ulg">Kullanıcı adı veya e-posta</label><input id="ulg" class="in mono" value="' + esc(f.login) + '" data-f="us.form.login" placeholder="ör. ahmet.yilmaz" autocapitalize="off" autocorrect="off" spellcheck="false"><p class="small muted" style="margin:4px 0 0">E-postası olmayanlar için kısa bir ad yeterli; girişte bu ad yazılır.</p></div>' +
+      '<div><label class="lb" for="upw">Parola</label><div class="row" style="flex-wrap:nowrap"><input id="upw" class="in mono" value="' + esc(f.pw) + '" data-f="us.form.pw" autocomplete="off"><button class="btn" data-act="ugen">Üret</button></div></div>' +
+      '<div><span class="lb">Yetki</span><div class="seg-btns"><button data-act="urol" data-v="kullanici" aria-pressed="' + (f.rol !== "yonetici") + '">Kullanıcı</button><button data-act="urol" data-v="yonetici" aria-pressed="' + (f.rol === "yonetici") + '">Yönetici</button></div></div>' +
+      '<button class="btn pri" data-act="uadd" style="justify-content:center">Kullanıcıyı ekle</button></div>' +
+      (US.made ? '<div class="done" role="status" style="margin-top:14px"><b>' + (US.made.reset ? 'Parola yenilendi.' : 'Kullanıcı eklendi.') + '</b> Bu bilgileri kişiye verin:<div class="mono" style="margin-top:8px;font-size:15px">Kullanıcı adı: <b>' + esc(US.made.login) + '</b><br>Parola: <b>' + esc(US.made.pw) + '</b></div><div class="row" style="margin-top:10px"><button class="btn sm" data-act="ucopy" data-v="' + esc("Kullanıcı adı: " + US.made.login + "\nParola: " + US.made.pw + "\nAdres: " + location.href.split("#")[0]) + '">Kopyala</button></div></div>' : '') +
+      '</div>';
+  }
+  h += '</div>';
+  if (adm) {
+    var L = (US.list || []).filter(function (u) { var q = US.q.toLocaleLowerCase("tr"); return !q || (u.ad + " " + u.email).toLocaleLowerCase("tr").indexOf(q) > -1; })
+      .sort(function (a, b) { return (a.ad || a.email).localeCompare(b.ad || b.email, "tr"); });
+    h += '<div class="sechead" style="margin-top:36px"><div><h2>Tüm kullanıcılar</h2><p>' + (US.list ? US.list.length + ' hesap' : '') + ' · parolası unutulan kişiye "Parola sıfırla" ile yenisini verin</p></div><div class="right row"><input class="in" style="max-width:240px;border-radius:999px" placeholder="Ad veya kullanıcı adı ara" value="' + esc(US.q) + '" data-f="us.q" data-rr="1" aria-label="Kullanıcı ara"><button class="btn sm" data-act="uload">Yenile</button></div></div>';
+    if (US.err) h += '<div class="panel" style="background:var(--red-soft);color:var(--red-ink);margin-bottom:12px">' + esc(US.err) + '</div>';
+    if (US.loading && !US.list) h += '<div class="panel empty">Kullanıcılar yükleniyor…</div>';
+    else if (US.list) h += '<div class="panel white scroll" style="padding:6px 10px"><table class="tbl"><thead><tr><th>Ad Soyad</th><th>Kullanıcı adı</th><th>Yetki</th><th>Son giriş</th><th>Durum</th><th></th></tr></thead><tbody>' + L.map(function (u) {
+      var self = u.id === me.id, pw = US.pwFor === u.id, ed = US.edit === u.id;
+      var row = '<tr><td>' + (ed ? '<div class="row" style="flex-wrap:nowrap"><input class="in" style="min-width:150px" value="' + esc(US.editVal || "") + '" data-f="us.editVal"><button class="btn sm pri" data-act="uname" data-id="' + u.id + '">Kaydet</button></div>' : '<b style="font-weight:600">' + esc(u.ad || "—") + '</b> <button class="btn sm ghost" data-act="uedit" data-id="' + u.id + '" aria-label="Adı düzenle" style="min-height:30px;padding:0 8px">✎</button>') + '</td>' +
+        '<td class="mono small">' + esc(loginName(u.email)) + '</td>' +
+        '<td>' + (u.rol === "yonetici" ? '<span class="chip good">Yönetici</span>' : '<span class="chip">Kullanıcı</span>') + '</td>' +
+        '<td class="small muted">' + (u.last_sign_in_at ? ago(new Date(u.last_sign_in_at).getTime()) : 'hiç girmedi') + '</td>' +
+        '<td>' + (u.aktif === false || u.banned ? '<span class="chip bad">Pasif</span>' : '<span class="chip good">Etkin</span>') + '</td>' +
+        '<td style="white-space:nowrap;text-align:right"><button class="btn sm" data-act="upwopen" data-id="' + u.id + '">Parola sıfırla</button> ' +
+        (self ? '' : '<button class="btn sm ghost" data-act="urolset" data-id="' + u.id + '" data-v="' + (u.rol === "yonetici" ? "kullanici" : "yonetici") + '">' + (u.rol === "yonetici" ? "Kullanıcı yap" : "Yönetici yap") + '</button> <button class="btn sm ' + (u.aktif === false ? "" : "danger") + '" data-act="uact" data-id="' + u.id + '" data-v="' + (u.aktif === false ? "1" : "0") + '">' + (u.aktif === false ? "Etkinleştir" : "Pasifleştir") + '</button>') + '</td></tr>';
+      if (pw) row += '<tr><td colspan="6" style="background:var(--soft)"><div class="row" style="align-items:flex-end"><div style="flex:1 1 220px"><label class="lb" for="npw">' + esc(u.ad || loginName(u.email)) + ' için yeni parola</label><div class="row" style="flex-wrap:nowrap"><input id="npw" class="in mono" value="' + esc(US.pwVal) + '" data-f="us.pwVal" autocomplete="off"><button class="btn" data-act="upwgen">Üret</button></div></div><button class="btn pri" data-act="upwsave" data-id="' + u.id + '">Parolayı kaydet</button><button class="btn" data-act="upwclose">Vazgeç</button></div><p class="small muted" style="margin:8px 0 0">Kaydettikten sonra yeni parolayı kişiye iletin; eski parola hemen geçersiz olur.</p></td></tr>';
+      return row;
+    }).join("") + '</tbody></table></div>';
+  }
+  var nc = namesOnCards();
+  if (nc.length) h += '<div class="sechead" style="margin-top:36px"><div><h2>Kartlarda geçen isimler</h2><p>Kontrol kartlarına yazılmış operatör ve kalite adları · aynı kişinin farklı yazımlarını buradan fark edebilirsiniz</p></div></div><div class="panel white scroll" style="padding:6px 10px"><table class="tbl"><thead><tr><th>Ad</th><th>Görev</th><th class="num">Kart</th><th class="num">Son kart</th><th>Hesabı</th></tr></thead><tbody>' + nc.map(function (x) {
+    var p = US.profiles.find(function (pp) { return pp.ad && pp.ad.toLocaleLowerCase("tr") === x.ad.toLocaleLowerCase("tr"); });
+    return '<tr><td><b style="font-weight:600">' + esc(x.ad) + '</b></td><td class="small">' + Object.keys(x.rol).join(", ") + '</td><td class="num">' + x.n + '</td><td class="num">' + trDate(x.last) + '</td><td class="small">' + (p ? '<span class="mono">' + esc(loginName(p.email)) + '</span>' : '<span class="muted">hesap yok</span>') + '</td></tr>';
+  }).join("") + '</tbody></table></div>';
+  return h;
+}
+async function usersAction(act, b) {
+  var id = b.dataset.id, v = b.dataset.v, f = US.form;
+  switch (act) {
+    case "ugen": f.pw = genPw(); break;
+    case "urol": f.rol = v; break;
+    case "uadd":
+      if (!String(f.ad).trim()) { toast("Ad Soyad yazın."); return; }
+      if (!String(f.login).trim()) { toast("Kullanıcı adı yazın."); return; }
+      if (String(f.pw).length < 6) { toast("Parola en az 6 karakter olmalı."); return; }
+      var lg = loginToEmail(f.login), pw = f.pw;
+      var d = await usersDo({ action: "create", login: lg, password: pw, ad: String(f.ad).trim(), rol: f.rol }, "Kullanıcı eklendi.");
+      if (d) { US.made = { login: loginName(d.email), pw: pw }; US.form = { ad: "", login: "", pw: "", rol: "kullanici" }; }
+      break;
+    case "ucopy": try { await navigator.clipboard.writeText(v); toast("Kopyalandı."); } catch (e) { toast("Kopyalanamadı; elle not alın."); } return;
+    case "uload": US.list = null; await usersLoad(); return;
+    case "upwopen": US.pwFor = id; US.pwVal = genPw(); break;
+    case "upwgen": US.pwVal = genPw(); break;
+    case "upwclose": US.pwFor = null; break;
+    case "upwsave":
+      if (String(US.pwVal).length < 6) { toast("Parola en az 6 karakter olmalı."); return; }
+      var np = US.pwVal, uu = (US.list || []).find(function (x) { return x.id === id; });
+      if (await usersDo({ action: "password", id: id, password: np })) { US.pwFor = null; US.made = { login: loginName(uu ? uu.email : ""), pw: np, reset: true }; toast("Parola değiştirildi."); window.scrollTo(0, 0); }
+      break;
+    case "uedit": var u2 = (US.list || []).find(function (x) { return x.id === id; }); US.edit = id; US.editVal = u2 ? u2.ad : ""; break;
+    case "uname": if (await usersDo({ action: "update", id: id, ad: String(US.editVal || "").trim() }, "Ad güncellendi.")) US.edit = null; break;
+    case "urolset": if (!confirm(v === "yonetici" ? "Bu kişiye yönetici yetkisi verilsin mi? Kullanıcı ekleyip parola değiştirebilir." : "Yönetici yetkisi kaldırılsın mı?")) return; await usersDo({ action: "update", id: id, rol: v }, "Yetki güncellendi."); break;
+    case "uact": if (v === "0" && !confirm("Bu kullanıcı pasifleştirilsin mi? Artık giriş yapamaz; kayıtları silinmez.")) return; await usersDo({ action: "update", id: id, aktif: v === "1" }, v === "1" ? "Kullanıcı etkinleştirildi." : "Kullanıcı pasifleştirildi."); break;
+    case "mypw":
+      var a = US.mine.a, c = US.mine.b;
+      if (String(a).length < 6) { toast("Parola en az 6 karakter olmalı."); return; }
+      if (a !== c) { toast("İki parola aynı değil."); return; }
+      var r = await cloud.sb.auth.updateUser({ password: a });
+      if (r.error) { toast(errText(r.error)); return; }
+      US.mine = { a: "", b: "" }; toast("Parolanız değiştirildi."); break;
+  }
+  render();
+}
+
 function cloudPanel() {
   var c = cloudCfg(), d = SYN.init ? dirty() : null;
   var h = '<div class="panel" style="margin:16px 0"><h2>Bulut (Supabase)</h2>';
@@ -783,7 +930,7 @@ function cloudLogout() {
   if (d.n && !confirm(d.n + " değişiklik henüz buluta gönderilmedi ve çıkışta bu cihazdan silinecek. Yine de çıkılsın mı?")) return;
   if (!d.n && !confirm("Çıkış yapılsın mı? Bu cihazdaki önbellek temizlenir; tekrar girişte veriler buluttan gelir.")) return;
   try { localStorage.removeItem(KEY); localStorage.removeItem(CK); } catch (e) {}
-  SYN = { r: {} }; S = JSON.parse(JSON.stringify(DEF));
+  SYN = { r: {} }; S = JSON.parse(JSON.stringify(DEF)); US.me = null; US.list = null; US.profiles = []; US.made = null;
   if (cloud.ch) { cloud.sb.removeChannel(cloud.ch); cloud.ch = null; }
   cloud.sb.auth.signOut(); ui.view = "panel"; ui.rec = null; render();
 }
@@ -955,7 +1102,7 @@ function batches(recs) {
 
 /* ---------------- üst menü ---------------- */
 function renderNav() {
-  var cur = ui.view === "yeni" ? "kontrol" : ui.view, i = NAV.findIndex(function (n) { return n[0] === cur; });
+  var cur = ui.view === "yeni" ? "kontrol" : ui.view === "kullanicilar" ? "veri" : ui.view, i = NAV.findIndex(function (n) { return n[0] === cur; });
   var btn = function (n) { return '<button data-act="nav" data-v="' + n[0] + '">' + esc(n[1]) + '</button>'; };
   var before = NAV.slice(0, i), after = NAV.slice(i + 1);
   document.getElementById("navTop").innerHTML =
@@ -1193,8 +1340,8 @@ function viewYeni() {
         '<div style="margin-top:6px;color:' + (c.taken ? 'var(--warn)' : 'var(--ink2)') + '">' + (c.taken ? 'Bu tarihte ' + c.taken + ' cihaz zaten açılmış (' + c.prefix + '001–' + pad(c.taken) + '); numaralar ' + pad(c.from) + '\'ten devam eder, çakışma olmaz.' : 'Bu tarihte açılmış cihaz yok; numaralar 001\'den başlar.') + '</div></div></div>' +
       '<div><div class="step-h"><span class="n">03</span><h2>Ekip <span class="small muted" style="font-weight:400">· isteğe bağlı, sonra da girilebilir</span></h2></div><div class="row" style="align-items:flex-end">' +
         '<div><label class="lb" for="nswo">İş emri no</label><input id="nswo" class="in" style="width:200px;border-radius:999px" value="' + esc(ns.wo) + '" data-f="ns.wo"></div>' +
-        '<div><label class="lb" for="nsop">Operatör</label><input id="nsop" class="in" style="width:200px;border-radius:999px" value="' + esc(ns.op) + '" data-f="ns.op"></div>' +
-        '<div><label class="lb" for="nsqc">Kalite sorumlusu</label><input id="nsqc" class="in" style="width:200px;border-radius:999px" value="' + esc(ns.qc) + '" data-f="ns.qc"></div></div>' +
+        '<div><label class="lb" for="nsop">Operatör</label><input id="nsop" class="in" style="width:200px;border-radius:999px" value="' + esc(ns.op) + '" data-f="ns.op" list="qcNames" autocomplete="off"></div>' +
+        '<div><label class="lb" for="nsqc">Kalite sorumlusu</label><input id="nsqc" class="in" style="width:200px;border-radius:999px" value="' + esc(ns.qc) + '" data-f="ns.qc" list="qcNames" autocomplete="off"></div></div>' +
         '<p class="small muted" style="margin-top:8px">Burada girilen adlar serinin bütün kartlarına yazılır; tek tek kartta değiştirilebilir.</p></div>' +
     '</div><div class="prev">' +
       '<div class="hz-card" style="background:' + L.bg + '"><div class="hz-plate" style="background:' + L.plate + ';color:' + L.fg + '"><b>VARM UP<br>' + esc(kwOf(ns.dev)) + '</b><small>' + esc(D.model) + '<br>' + esc(D.doc) + '</small><hr><em>R32' + (gt ? ' · ' + gt + ' g' : '') + '</em></div>' +
@@ -1229,7 +1376,7 @@ function viewDetail(r) {
   var ncrN = (r.ncr || []).length, fireN = (r.fire || []).length;
   var head = '<button class="back" data-act="back">← ' + esc(r.batch ? r.batch + " serisi" : "Kontrol kartları") + '</button>' +
     '<div class="cardhead"><div class="l"><p class="eyebrow" style="margin:6px 0 0">Kontrol kartı · ' + esc(D.doc || "") + ' · ' + esc(D.label || r.deviceKey) + '</p><h1>' + serialHtml(r.serial) + '</h1><p class="meta">' + esc(D.model || "") + ' · ' + trDate(r.date) + ' · ' + nItems + ' madde · ' + (r.workOrder ? "İE " + esc(r.workOrder) : "iş emri girilmedi") + (r.closedAt ? ' · <span class="st ok" style="vertical-align:middle">Kapatıldı</span>' : '') + '</p>' + (r.touchedAt ? '<p class="lastedit">Son değişiklik: ' + esc(r.touchedOn || "") + (r.touchedBy ? " · " + esc(r.touchedBy) : "") + " · " + ago(r.touchedAt) + '</p>' : '') + '</div>' +
-    '<div class="people"><label>Operatör<input class="in" value="' + esc(r.operator || "") + '" data-f="rec.operator" placeholder="Ad Soyad"></label><label>Kalite<input class="in" value="' + esc(r.qc || "") + '" data-f="rec.qc" placeholder="Ad Soyad"></label><div style="display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--muted)"><span>A4 karttan aktar</span><button class="btn pri" data-act="allcard" style="min-height:44px">✓ Tümünü uygun işaretle</button></div></div></div>';
+    '<div class="people"><label>Operatör<input class="in" value="' + esc(r.operator || "") + '" data-f="rec.operator" list="qcNames" autocomplete="off" placeholder="Ad Soyad"></label><label>Kalite<input class="in" value="' + esc(r.qc || "") + '" data-f="rec.qc" list="qcNames" autocomplete="off" placeholder="Ad Soyad"></label><div style="display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--muted)"><span>A4 karttan aktar</span><button class="btn pri" data-act="allcard" style="min-height:44px">✓ Tümünü uygun işaretle</button></div></div></div>';
   var tabs = '<div class="tabs" role="tablist" style="margin-top:22px">' + [["liste", "Kontrol listesi"], ["ncr", "Uygunsuzluk ve fire" + (ncrN + fireN ? " (" + (ncrN + fireN) + ")" : "")]].map(function (t) { return '<button role="tab" data-act="tab" data-v="' + t[0] + '" aria-selected="' + (ui.tab === t[0] || (t[0] === "ncr" && ui.tab === "fire")) + '">' + t[1] + '</button>'; }).join("") + '</div>';
   if (ui.tab === "ncr" || ui.tab === "fire") return head + tabs + '<h2>Uygunsuzluk kayıtları</h2>' + viewNcr(r) + '<h2 style="margin-top:28px">Fire</h2>' + viewFire(r);
 
@@ -1592,7 +1739,7 @@ function viewAnaliz() {
 /* ---------------- VERİ VE AYARLAR ---------------- */
 function viewVeri() {
   var s = S.settings;
-  return '<h1>Veri ve ayarlar</h1><p class="lead">' + (cloud.user ? 'Veriler bulutta saklanır; yine de ayda bir yedek dosyası indirmeniz önerilir.' : 'Veriler şu an yalnızca bu cihazdaki tarayıcıda. Bulut bağlantısını aşağıdan kurun.') + '</p>' + cloudPanel() + '' +
+  return '<h1>Veri ve ayarlar</h1><p class="lead">' + (cloud.user ? 'Veriler bulutta saklanır; yine de ayda bir yedek dosyası indirmeniz önerilir.' : 'Veriler şu an yalnızca bu cihazdaki tarayıcıda. Bulut bağlantısını aşağıdan kurun.') + '</p>' + (cloud.user ? '<div class="panel" style="margin:16px 0;display:flex;flex-wrap:wrap;align-items:center;gap:12px"><div style="flex:1 1 260px"><h2 style="margin:0 0 4px">Kullanıcılar ve parolalar</h2><p class="muted small" style="margin:0">' + (isAdmin() ? 'Kullanıcı ekleyin, unutulan parolaları yenileyin, kartlarda geçen isimleri görün.' : 'Hesabınızı görün, parolanızı değiştirin.') + '</p></div><button class="btn pri" data-act="nav" data-v="kullanicilar">Kullanıcılar →</button></div>' : '') + cloudPanel() + '' +
     '<div class="grid2"><div class="panel"><h2>Yedek</h2><p class="muted">' + S.records.length + ' kontrol kartı kayıtlı.</p><div class="row"><button class="btn pri" data-act="export">Yedeği indir (JSON)</button><button class="btn" data-act="import">Yedekten geri yükle</button></div>' +
     '<h2 style="margin-top:20px">Note Loop\'tan aktar</h2><p class="muted">Note Loop uygulamasındaki Check List kayıtlarını (işaretler, gaz/kW değerleri, hatalar ve fire) bu programa taşır. Aynı kayıt iki kez eklenmez.</p><div class="row"><button class="btn" data-act="nlocal">Bu tarayıcıdaki Note Loop verisinden</button><button class="btn" data-act="import">Note Loop yedek dosyasından</button></div></div>' +
     '<div class="panel"><h2>Değerlendirme ayarları</h2><div class="stack">' +
@@ -1725,6 +1872,7 @@ function importText(txt) {
 function setField(path, val) {
   var p = path.split("."), r = curRec();
   if (p[0] === "rec" && r) r[p[1]] = val;
+  else if (p[0] === "us") { if (p.length === 3) US[p[1]][p[2]] = val; else US[p[1]] = val; return false; }
   else if (p[0] === "val" && r) { r.marks[p[1]] = Object.assign({}, r.marks[p[1]] || {}, { val: val }); }
   else if (p[0] === "ncr" && r) { var n = (r.ncr || []).find(function (x) { return x.id === p[1]; }); if (n) { n[p[2]] = val; if (p[2] === "tip" && !n.alinan && HTIP_BY[val]) n.alinan = HTIP_BY[val].st; if (p[2] === "tip") n.neden = ""; } }
   else if (p[0] === "gncr") { var gr = S.records.find(function (x) { return x.id === p[1]; }); var gn = gr && (gr.ncr || []).find(function (x) { return x.id === p[2]; }); if (gn) { gn[p[3]] = val; if (p[3] === "tip" && !gn.alinan && HTIP_BY[val]) gn.alinan = HTIP_BY[val].st; if (p[3] === "tip") gn.neden = ""; } }
@@ -1761,6 +1909,8 @@ document.addEventListener("click", function (ev) {
   var a = b.dataset.act, v = b.dataset.v, r = curRec();
   switch (a) {
     case "nav": ui.view = v; ui.rec = null; ui.nf = null; ui.cnote = ""; if (v === "yeni" && ui.ns) ui.ns.done = null; window.scrollTo(0, 0); break;
+    case "ugen": case "urol": case "uadd": case "ucopy": case "uload": case "upwopen": case "upwgen": case "upwclose": case "upwsave": case "uedit": case "uname": case "urolset": case "uact": case "mypw":
+      usersAction(a, b); return;
     case "period": ui.period = v; break;
     case "dev": ui.dev = v; break;
     case "fdev": ui.fdev = v; break;
@@ -1850,6 +2000,7 @@ function render() {
   else if (ui.view === "hatalar") h = viewHatalar();
   else if (ui.view === "analiz") h = viewAnaliz();
   else if (ui.view === "veri") h = viewVeri();
+  else if (ui.view === "kullanicilar") h = viewKullanicilar();
   else h = viewPanel();
   v.innerHTML = '<div class="wrap">' + h + '</div>';
   paintCloud();
