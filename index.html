@@ -200,7 +200,7 @@ button.kpi:hover{background:#EDEDED}
 .hz-card{border-radius:28px;overflow:hidden;color:#F4ECDD;padding:26px;display:flex;gap:24px;cursor:pointer}
 .hz-code{overflow:hidden;pointer-events:none;padding:12px 18px 0 6px;color:var(--ink)}
 .hz-plate{flex:0 0 31%;border-radius:8px;padding:18px 16px;display:flex;flex-direction:column;box-shadow:0 10px 24px rgba(0,0,0,.45),inset 0 0 0 1px rgba(255,255,255,.08)}
-.hz-plate b{font-size:27px;font-weight:600;line-height:1;letter-spacing:-.01em}
+.hz-plate b{font-size:27px;font-weight:600;line-height:1;letter-spacing:-.01em}.hz-plate b.oem{font-size:22px;overflow-wrap:anywhere}
 .hz-plate small{margin-top:10px;font-family:var(--mono);font-size:10px;opacity:.8;line-height:1.5}
 .hz-plate hr{width:40%;border:0;border-top:1px solid currentColor;opacity:.4;margin:14px 0}
 .hz-plate em{margin-top:auto;font-style:normal;font-family:var(--mono);font-size:10.5px;letter-spacing:.14em}
@@ -673,7 +673,7 @@ async function cloudStart() {
     S.settings = Object.assign({}, DEF.settings, p.set || S.settings || {});
     SYN = { r: {}, init: 1, s: p.set ? canon(S.settings) : null };
     p.recs.forEach(function (x) { SYN.r[x.id] = canon(x.data); });
-    synSave(); normalizeAll(); saveLocal();
+    synSave(); normalizeAll(); saveLocal(); if (seedOem()) save();
     cloud.last = new Date(); setCloud("ok");
     softRender();
     subscribe();
@@ -961,6 +961,14 @@ var PAZAR = [["yi", "Yurt içi"], ["yd", "Yurt dışı"]];
 var LBL = { pp: "Varmeks Şeffaf PP Kabartma", griYi: "Yurt içi gri etiket", griYd: "Yurt dışı gri etiket", kutuYi: "Varmeks standart kutu", kutuYd: "Yurt dışı kutusu" };
 var LABEL_NOS = ["46.1", "46.2", "46.3", "46.4", "48", "50"];
 var DG_SEBEP = ["Sipariş / müşteri değişti", "Yurt dışına yönlendirildi", "OEM markasına dönüştürüldü", "Etiket hasarlı / yanlış basılmış", "Diğer"];
+var OEM_PRESET = ["23h energy", "Heating-Special", "Derrman", "Eco Energy Mark", "Kopp", "Lexron", "Noreva", "Seruth", "Virello", "Tisea"];
+function seedOem() {
+  if (S.settings.oemSeed) return false;
+  var L = (S.settings.oem || []).slice(), have = L.map(function (f) { return String(f.ad || "").toLocaleLowerCase("tr"); });
+  OEM_PRESET.forEach(function (ad, i) { if (have.indexOf(ad.toLocaleLowerCase("tr")) < 0) L.push({ id: "op" + (i + 1), ad: ad, etiket: ad + " marka etiketi", kutu: "", gri: "", servis: false }); });
+  S.settings.oem = L; S.settings.oemSeed = 1; return true;
+}
+function plateName(r) { var c = brandCtx(r); return c.oem && c.firm ? c.firm.ad : "VARM UP"; }
 function oemList() { return (S.settings.oem || []).filter(function (f) { return f && f.id; }); }
 function oemById(id) { return oemList().find(function (f) { return f.id === id; }) || null; }
 function brandCtx(x) {
@@ -1250,7 +1258,7 @@ function hzMount() {
   var W = 0, cw = 0, ch = 0, gap = 0, Lx = 0, TOP = 74, dpr = 1, span = 0;
   function cardHtml(b) {
     var d = CHK_DEVICES.find(function (x) { return x.key === b.dev; }) || {}, L = LOOK[b.dev] || LOOK["8kW"], gt = gasTarget(b.dev), f = pct(b.ok, b.n);
-    return '<div class="hz-plate" style="background:' + L.plate + ';color:' + L.fg + '"><b>VARM UP<br>' + esc(kwOf(b.dev)) + '</b><small>' + esc(d.model || "") + '<br>' + esc(d.doc || "") + '</small><hr><em>R32' + (gt ? ' · ' + gt + ' g' : '') + '</em></div>' +
+    return '<div class="hz-plate" style="background:' + L.plate + ';color:' + L.fg + '"><b' + (plateName(b.recs[0]) !== "VARM UP" ? ' class="oem"' : '') + '>' + esc(plateName(b.recs[0])) + '<br>' + esc(kwOf(b.dev)) + '</b><small>' + esc(d.model || "") + '<br>' + esc(d.doc || "") + '</small><hr><em>R32' + (gt ? ' · ' + gt + ' g' : '') + '</em></div>' +
       '<div class="hz-info"><div class="hz-kick">SERİ · ' + esc(b.id) + '</div><div class="hz-ttl">' + b.n + ' cihaz</div><div class="hz-by">' + trDate(b.date) + ' · ' + b.ncr + ' uygunsuzluk · ' + b.fire + ' fire</div>' +
       '<div class="hz-barw"><i style="width:' + f + '%"></i></div><div class="hz-pl"><span>' + b.ok + ' / ' + b.n + ' hatasız</span><span>%' + f + '</span></div>' +
       '<div class="hz-stt"><div><b>%' + f + '</b><span>ilk seferde doğru</span></div><div><b>' + b.h + '</b><span>ısıtma ort., kW</span></div><div><b>' + b.c + '</b><span>soğutma ort., kW</span></div></div></div>';
@@ -1396,7 +1404,7 @@ function viewYeni() {
         '<div><label class="lb" for="nsqc">Kalite sorumlusu</label><input id="nsqc" class="in" style="width:200px;border-radius:999px" value="' + esc(ns.qc) + '" data-f="ns.qc" list="qcNames" autocomplete="off"></div></div>' +
         '<p class="small muted" style="margin-top:8px">Burada girilen adlar serinin bütün kartlarına yazılır; tek tek kartta değiştirilebilir.</p></div>' +
     '</div><div class="prev">' +
-      '<div class="hz-card" style="background:' + L.bg + '"><div class="hz-plate" style="background:' + L.plate + ';color:' + L.fg + '"><b>VARM UP<br>' + esc(kwOf(ns.dev)) + '</b><small>' + esc(D.model) + '<br>' + esc(D.doc) + '</small><hr><em>R32' + (gt ? ' · ' + gt + ' g' : '') + '</em></div>' +
+      '<div class="hz-card" style="background:' + L.bg + '"><div class="hz-plate" style="background:' + L.plate + ';color:' + L.fg + '"><b' + (plateName(nsr) !== "VARM UP" ? ' class="oem"' : '') + '>' + esc(plateName(nsr)) + '<br>' + esc(kwOf(ns.dev)) + '</b><small>' + esc(D.model) + '<br>' + esc(D.doc) + '</small><hr><em>R32' + (gt ? ' · ' + gt + ' g' : '') + '</em></div>' +
         '<div class="hz-info"><div class="hz-kick">YENİ SERİ · ' + c.prefix + ' · ' + esc(brandTag(nsr)) + '</div><div class="hz-ttl">' + ns.n + ' cihaz</div><div class="hz-by">' + trDate(ns.date) + ' · ' + ns.n * nItems + ' kontrol maddesi</div><div class="hz-barw"></div><div class="hz-pl"><span>0 / ' + ns.n + ' kontrol edildi</span><span>bandın sonuna eklenir</span></div></div></div>' +
       '<div class="panel"><div class="between eyebrow" style="text-transform:none"><span>AÇILACAK KARTLAR</span><span>' + c.prefix + pad(c.from) + ' – ' + pad(c.to) + '</span></div><div class="sgrid">' + serials.join("") + '</div></div>' +
       (done ? '<div class="done" role="status"><b>Seri ' + esc(done.prefix) + ' açıldı.</b> ' + done.n + ' kontrol kartı hazır; panelde bandın sonuna eklendi.<div class="row" style="margin-top:12px"><button class="btn pri" data-act="open" data-id="' + done.first + '">İlk kartı aç · ' + esc(done.firstSerial) + '</button><button class="btn" data-act="nav" data-v="panel">Panele dön</button></div></div>' :
@@ -2145,7 +2153,7 @@ function render() {
   paintCloud();
   if (ui.view === "panel") hzMount(); else hzStop();
 }
-if (normalizeAll()) save();
+if (normalizeAll() | seedOem()) save();
 render();
 cloudInit();
 if ("serviceWorker" in navigator && location.protocol === "https:") { window.addEventListener("load", function () { navigator.serviceWorker.register("sw.js").catch(function () {}); }); }
