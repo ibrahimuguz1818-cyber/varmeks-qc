@@ -545,7 +545,7 @@ h1:not(.h8){font:400 clamp(48px,5.4vw,84px)/.92 var(--f-disp);letter-spacing:.00
 @media (max-width:760px){.hzfl .fp{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;max-width:100%}.hzfl .fp::-webkit-scrollbar{display:none}.hztc{width:6px}.hzgrp .tk{gap:2px}}
 /* karşılama: test standındaki cihaz */
 .hero.tz{display:grid;grid-template-columns:minmax(0,.9fr) minmax(0,1.1fr);align-items:center;gap:clamp(16px,3vw,48px);min-height:560px;padding-block:20px;text-align:left}
-.tz-txt{display:flex;flex-direction:column;align-items:flex-start;gap:18px;min-width:0}.tz-mode{width:fit-content}.tz-read,.tz-not{width:100%}
+.tz-txt{display:flex;flex-direction:column;align-items:flex-start;gap:18px;min-width:0}.tz-mode{width:fit-content}.tz-txt .gz{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;margin:0}.tz-read,.tz-not{width:100%}
 @media (min-width:901px){#pnTop>.pn>.wrap{padding-left:max(96px,calc((100% - 1440px)/2 + 32px))}}
 .tz-txt .eyebrow{margin:0}
 h1.tz-h{margin:0;display:flex;flex-direction:column;align-items:flex-start;text-align:left;font:400 clamp(52px,6vw,100px)/1.06 var(--f-disp);letter-spacing:.005em;text-transform:uppercase}
@@ -1494,7 +1494,7 @@ function heroHtml() {
   var row = function (ad, val, u) { return '<div class="tz-r"><dt>' + ad + '</dt><dd><b>' + val + '</b>' + (u ? ' ' + u : '') + '</dd></div>'; };
   return '<section class="hero tz" id="h7"><div class="tz-txt">' +
     '<div class="eyebrow">VARMEKS · üretim test ve kontrol kaydı</div>' +
-    '<h1 class="tz-h"><span>Kontrol et.</span><span class="l">İşaretle.</span><span class="g">Erken yakala.</span></h1>' +
+    '<h1 class="gz">VARMEKS kalite paneli</h1>' +
     '<dl class="tz-read">' + row("Bugün girilen cihaz", b.gir, "") + row("Bugün işlem gören kart", b.isl, "") + row("Bugün kapatılan kart", b.kap, "") + row("Bugünkü uygunsuzluk", b.ncr, "") +
     '<div class="tz-r hd"><dt>Son işlem</dt><dd>' + (b.son ? '<b class="mono">' + esc(b.son.serial || "—") + '</b> · ' + esc(devLabel(b.son.deviceKey)) + ' · ' + new Date(b.son.touchedAt).toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit" }) : 'Bugün henüz işlem yok') + '</dd></div></dl></div>' +
     '<div class="tz-dev"><canvas id="tzCv" role="img" aria-label="Saat ve bugün girilen cihaz sayısı"></canvas></div></section>';
