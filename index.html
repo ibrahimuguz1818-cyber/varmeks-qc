@@ -543,6 +543,28 @@ h1:not(.h8){font:400 clamp(48px,5.4vw,84px)/.92 var(--f-disp);letter-spacing:.00
 .hzleg i.o{background:linear-gradient(0deg,#111 50%,#D6D6D6 50%)}
 .hzleg i.x{background:linear-gradient(0deg,#111 50%,#E8A99C 50%)}
 @media (max-width:760px){.hzfl .fp{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;max-width:100%}.hzfl .fp::-webkit-scrollbar{display:none}.hztc{width:6px}.hzgrp .tk{gap:2px}}
+/* karşılama: test standındaki cihaz */
+.hero.tz{display:grid;grid-template-columns:minmax(0,.9fr) minmax(0,1.1fr);align-items:center;gap:clamp(16px,3vw,48px);min-height:560px;padding-block:20px;text-align:left}
+.tz-txt{display:flex;flex-direction:column;align-items:flex-start;gap:18px;min-width:0}.tz-mode{width:fit-content}.tz-read,.tz-not{width:100%}
+@media (min-width:901px){#pnTop>.pn>.wrap{padding-left:max(96px,calc((100% - 1440px)/2 + 32px))}}
+.tz-txt .eyebrow{margin:0}
+h1.tz-h{margin:0;display:flex;flex-direction:column;align-items:flex-start;text-align:left;font:400 clamp(52px,6vw,100px)/1.06 var(--f-disp);letter-spacing:.005em;text-transform:uppercase}
+h1.tz-h .l{color:var(--lacivert)}h1.tz-h .g{color:#A3A3A3}
+.tz-read{margin:0;display:grid;gap:0;max-width:420px;border-top:1px solid #E7E7E7}
+.tz-r{display:flex;justify-content:space-between;align-items:baseline;gap:12px;padding:10px 0;border-bottom:1px solid #E7E7E7;transition:color .3s}
+.tz-r dt{font:500 10.5px var(--mono);letter-spacing:.14em;text-transform:uppercase;color:#8A8A8A}
+.tz-r dd{margin:0;font-size:14px;color:#555}
+.tz-r dd b{font:600 22px var(--mono);color:#111;letter-spacing:-.02em}
+.tz-r.hd dd b{font-size:14px}
+.tz-r.on dt{color:#111}.tz-r.on dd b{color:var(--lacivert)}
+.tz-r.on[data-k="c"] dd b{color:#C24A2C}
+.tz-not{margin:0;max-width:420px}
+.tz-dev{position:relative;min-width:0}
+.tz-dev canvas{display:block;width:100%;height:clamp(380px,44vw,560px);cursor:pointer;touch-action:pan-y}
+.tz.don .tz-txt>*{animation:h8Gel 1s cubic-bezier(.16,1,.3,1) both}
+.tz.don .tz-txt>*:nth-child(2){animation-delay:.08s}.tz.don .tz-txt>*:nth-child(3){animation-delay:.16s}.tz.don .tz-txt>*:nth-child(4){animation-delay:.24s}
+.tz.don .tz-dev{animation:h7Scale 1.1s cubic-bezier(.16,1,.3,1) both}
+@media (max-width:900px){.hero.tz{grid-template-columns:1fr;min-height:0}.tz-dev{order:-1}.tz-dev canvas{height:min(92vw,440px)}}
 </style>
 </head>
 <body>
@@ -1291,7 +1313,7 @@ function viewPanel() {
 
   var kp = function (v, label, dot, sub, act, alert) { return '<button class="kpi' + (alert ? " alert" : "") + '" data-act="nav" data-v="' + act + '"><span class="arr" aria-hidden="true">→</span><b>' + v + '</b><span><i class="dotc" style="background:' + dot + '"></i>' + label + '</span><small>' + sub + '</small></button>'; };
   var html = nlBanner() + resumeCard() + '<div id="pnTop"><div class="pn" data-ad="Panel"><div class="pn-perde" aria-hidden="true"></div><div class="wrap">' +
-    '<section class="hero h7" id="h7"><div class="orb" aria-hidden="true"></div><canvas class="h7-toz" id="h7Toz" aria-hidden="true"></canvas><h1 class="h8"><canvas id="h7Baslik" aria-hidden="true"></canvas><span class="gz">Kontrol et. İşaretle. Erken yakala.</span></h1></section>' +
+    heroHtml() +
     '<div class="herofoot"><div class="txt"><p class="small muted">VARMEKS üretim kalite kontrolü</p><p class="big">Her cihaz istasyon istasyon kontrol listesinden geçer; operatör ve kalite ayrı ayrı onaylar.</p>' +
       '<p class="small muted"><b style="color:var(--ink);font-weight:600">' + S.records.length + ' kart</b>, ' + B.length + ' seri' + (last ? ' · son seri ' + esc(last.id) + ', ' + trDate(last.date) : '') + '</p></div>' +
       '<div class="cta"><button class="btn pri" data-act="nav" data-v="yeni">Yeni seri aç</button><button class="btn" data-act="nav" data-v="kontrol">Kontrol kartları</button><button class="btn" data-act="nav" data-v="hatalar">Hatalar</button></div></div>' +
@@ -1437,7 +1459,7 @@ function tozKare(now) {
   if (T.mx < -1e4 && enCok < 0.09) { if (++T.sakin > 8) { tozBitir(); return; } } else T.sakin = 0;
   requestAnimationFrame(tozKare);
 }
-function heroMount(gel) {
+function heroMountKelime(gel) {
   var h7 = document.getElementById("h7"); if (!h7) return;
   h7Yerlestir();
   if (window.document.fonts && document.fonts.load && !H7.fontOk) document.fonts.load("400 100px Anton").then(function () { H7.fontOk = true; h7Yerlestir(); }, function () {});
@@ -1453,6 +1475,154 @@ function heroMount(gel) {
   h7.onpointerup = function (e) { if (e.pointerType !== "mouse") TOZ.mx = TOZ.my = -1e5; };
 }
 window.addEventListener("resize", function () { clearTimeout(H7.rt); H7.rt = setTimeout(function () { if (TOZ.aktif) tozBitir(); h7Yerlestir(); }, 150); });
+
+/* ---- karşılama: test standındaki cihaz — ızgara arkasında dönen fan, tanecik hava ---- */
+var TZ = { mode: "h", auto: true, ang: 0, spd: 1, hedefSpd: 1, P: [], son: 0, raf: 0, mx: -1e5, my: -1e5, basili: false, t0: 0, grille: null, gk: "" };
+function tzLast() {
+  var L = S.records.filter(function (r) { var m = r.marks || {}; return (m["41"] && m["41"].val) || (m["42"] && m["42"].val); });
+  L.sort(function (a, b) { return (b.touchedAt || b.createdAt || 0) - (a.touchedAt || a.createdAt || 0) || String(b.serial).localeCompare(String(a.serial)); });
+  return L[0] || null;
+}
+function tzNum(v) { var n = parseFloat(String(v || "").replace(",", ".")); return isFinite(n) ? n : null; }
+function tzFmt(n, d) { return n === null ? "—" : n.toFixed(d).replace(".", ","); }
+function heroHtml() {
+  var r = tzLast(), m = r ? r.marks : {}, h = r ? tzNum((m["41"] || {}).val) : null, c = r ? tzNum((m["42"] || {}).val) : null, g = r ? tzNum((m["33"] || {}).val) : null;
+  var row = function (k, ad, val, u, on) { return '<div class="tz-r' + (on ? ' on' : '') + '" data-k="' + k + '"><dt>' + ad + '</dt><dd><b>' + val + '</b> ' + u + '</dd></div>'; };
+  return '<section class="hero tz" id="h7"><div class="tz-txt">' +
+    '<div class="eyebrow">VARMEKS · üretim test ve kontrol kaydı</div>' +
+    '<h1 class="tz-h"><span>Kontrol et.</span><span class="l">İşaretle.</span><span class="g">Erken yakala.</span></h1>' +
+    '<div class="seg-btns tz-mode" role="group" aria-label="Test türü"><button data-act="tzm" data-v="h" aria-pressed="' + (TZ.mode === "h") + '">Isıtma testi</button><button data-act="tzm" data-v="c" aria-pressed="' + (TZ.mode === "c") + '">Soğutma testi</button></div>' +
+    '<dl class="tz-read"><div class="tz-r hd"><dt>Son test</dt><dd>' + (r ? '<b class="mono">' + esc(r.serial || "—") + '</b> · ' + esc(devLabel(r.deviceKey)) : 'Ölçüm girilmiş kart yok') + '</dd></div>' +
+    row("h", "Isıtma kapasitesi", tzFmt(h, 1), "kW", TZ.mode === "h") + row("c", "Soğutma kapasitesi", tzFmt(c, 1), "kW", TZ.mode === "c") + row("g", "R32 şarjı", g === null ? (r ? String(gasTarget(r.deviceKey) || "—") : "—") : tzFmt(g, 0), "g", false) + '</dl>' +
+    '<p class="tz-not small muted">' + (TZ.mode === "h" ? "Isıtmada dış ünite havadan ısı çeker; fandan <b>soğuk</b> hava çıkar." : "Soğutmada ısı dışarı atılır; fandan <b>sıcak</b> hava çıkar.") + '</p></div>' +
+    '<div class="tz-dev"><canvas id="tzCv" aria-label="Test standında çalışan ısı pompası: dönen fan ve üflenen hava" role="img"></canvas></div></section>';
+}
+function tzGeo(cv) {
+  var W = cv.clientWidth, H = cv.clientHeight, D = Math.min(W * 0.78, H * 0.8, 460);
+  var x = (W - D) / 2, y = (H - D * 0.92) / 2;
+  var pl = { x: x, y: y, w: D, h: D * 0.92 }, ins = D * 0.055;
+  var gr = { x: pl.x + ins, y: pl.y + ins * 1.25, w: pl.w - ins * 2, h: pl.h - ins * 2.3 };
+  var R = gr.w * 0.31, fx = gr.x + gr.w * 0.38, fy = gr.y + gr.h * 0.52;
+  var logo = { x: gr.x + gr.w * 0.6, y: gr.y + gr.h * 0.13, w: gr.w * 0.38, h: gr.h * 0.12 };
+  return { W: W, H: H, D: D, pl: pl, gr: gr, R: R, fx: fx, fy: fy, logo: logo };
+}
+function tzGrille(G, dp) {
+  var key = [G.W, G.H, dp].join("x"); if (TZ.gk === key && TZ.grille) return TZ.grille;
+  var o = document.createElement("canvas"); o.width = Math.round(G.W * dp); o.height = Math.round(G.H * dp);
+  var c = o.getContext("2d"); c.setTransform(dp, 0, 0, dp, 0, 0);
+  var p = G.pl, g = G.gr, L = G.logo;
+  c.fillStyle = "#FBFBFB"; c.fillRect(p.x, p.y, p.w, p.h);
+  var s = g.w / 15, hgt = s * 0.82, rows = Math.floor(g.h / hgt), cols = Math.floor((g.w - s / 2) / (s / 2)), K = 0.7;
+  var tri = function (cx, cy, down) { var h3 = hgt / 3, w2 = s / 2 * K, top = down ? cy - h3 * K : cy - 2 * h3 * K, bot = down ? cy + 2 * h3 * K : cy + h3 * K;
+    if (down) { c.moveTo(cx - w2, top); c.lineTo(cx + w2, top); c.lineTo(cx, bot); } else { c.moveTo(cx, top); c.lineTo(cx + w2, bot); c.lineTo(cx - w2, bot); } c.closePath(); };
+  var inLogo = function (cx, cy) { return cx > L.x - s * 0.5 && cx < L.x + L.w + s * 0.5 && cy > L.y - hgt * 0.6 && cy < L.y + L.h + hgt * 0.6; };
+  var x0 = g.x + (g.w - (cols + 1) * s / 2) / 2, y0 = g.y + (g.h - rows * hgt) / 2;
+  c.beginPath();
+  for (var r = 0; r < rows; r++) for (var k = 0; k < cols; k++) {
+    var down = (k + r) % 2 === 0, cx = x0 + s / 2 + k * s / 2, cy = y0 + r * hgt + (down ? hgt / 3 : hgt * 2 / 3);
+    if (inLogo(cx, cy)) continue;
+    tri(cx, cy, down);
+  }
+  c.save(); c.globalCompositeOperation = "destination-out"; c.fillStyle = "#000"; c.fill(); c.restore();
+  c.lineWidth = 0.8; c.strokeStyle = "rgba(20,20,24,.3)"; c.stroke();
+  c.lineWidth = 1.4; c.strokeStyle = "#1A1A1E"; c.strokeRect(p.x, p.y, p.w, p.h);
+  c.lineWidth = 1; c.beginPath(); c.moveTo(p.x - 3, p.y + 6); c.lineTo(p.x + p.w + 3, p.y + 6); c.stroke(); c.strokeRect(p.x - 3, p.y - 2, p.w + 6, 8);
+  c.fillStyle = "#1A1A1E"; [0.16, 0.8].forEach(function (f) { c.fillRect(p.x + p.w * f, p.y + p.h, p.w * 0.07, 7); });
+  c.textBaseline = "alphabetic"; c.textAlign = "center";
+  c.fillStyle = "#E3262F"; c.font = "900 " + Math.round(L.h * 0.5) + "px 'Arial Black','Arial',Helvetica,sans-serif"; while (c.measureText("VARMEKS").width > L.w * 0.86) c.font = c.font.replace(/(\d+)px/, function (a, n) { return (n - 1) + "px"; }); c.fillText("VARMEKS", L.x + L.w / 2, L.y + L.h * 0.62);
+  c.fillStyle = "#8A8A8A"; c.font = "500 " + Math.max(7, Math.round(L.h * 0.2)) + "px Inter,Arial,sans-serif";
+  if ("letterSpacing" in c) c.letterSpacing = Math.round(L.h * 0.12) + "px"; c.fillText("HEAT PUMPS", L.x + L.w / 2, L.y + L.h * 0.95);
+  TZ.grille = o; TZ.gk = key; return o;
+}
+function tzFan(c, G) {
+  var R = G.R;
+  c.save(); c.beginPath(); c.rect(G.gr.x, G.gr.y, G.gr.w, G.gr.h); c.clip();
+  c.fillStyle = "#E9EAEE"; c.fillRect(G.gr.x, G.gr.y, G.gr.w, G.gr.h);
+  c.strokeStyle = "rgba(30,34,44,.16)"; c.lineWidth = 1; c.beginPath();
+  for (var x = G.gr.x; x < G.gr.x + G.gr.w; x += 4) { c.moveTo(x, G.gr.y); c.lineTo(x, G.gr.y + G.gr.h); } c.stroke();
+  c.beginPath(); c.arc(G.fx, G.fy, R * 1.04, 0, Math.PI * 2); c.fillStyle = "#14161B"; c.fill();
+  c.translate(G.fx, G.fy); c.rotate(TZ.ang);
+  for (var b = 0; b < 3; b++) {
+    c.save(); c.rotate(b * Math.PI * 2 / 3); c.beginPath();
+    c.moveTo(R * 0.2 * Math.cos(-0.5), R * 0.2 * Math.sin(-0.5));
+    c.bezierCurveTo(R * 0.55, -R * 0.62, R * 0.98, -R * 0.42, R * 0.97, R * 0.08);
+    c.bezierCurveTo(R * 0.8, R * 0.22, R * 0.55, R * 0.18, R * 0.2 * Math.cos(0.7), R * 0.2 * Math.sin(0.7));
+    c.closePath(); var gb = c.createLinearGradient(0, -R, R, R * 0.2); gb.addColorStop(0, "#3A4256"); gb.addColorStop(1, "#1F3A78"); c.fillStyle = gb; c.fill();
+    c.strokeStyle = "rgba(255,255,255,.12)"; c.lineWidth = 1; c.stroke(); c.restore();
+  }
+  c.beginPath(); c.arc(0, 0, R * 0.22, 0, Math.PI * 2); c.fillStyle = "#2A2E38"; c.fill();
+  c.beginPath(); c.arc(0, 0, R * 0.12, 0, Math.PI * 2); c.fillStyle = "#3B4150"; c.fill();
+  c.beginPath(); c.arc(0, 0, R * 0.03, 0, Math.PI * 2); c.fillStyle = "#0E0F12"; c.fill();
+  c.restore();
+}
+function tzRenk(a) { return TZ.mode === "h" ? "rgba(60,110,210," + a + ")" : "rgba(214,84,52," + a + ")"; }
+function tzSpawn(G, out) {
+  if (out) { var an = Math.random() * Math.PI * 2, rr = G.R * (0.25 + Math.random() * 0.7); return { o: 1, x: G.fx + Math.cos(an) * rr, y: G.fy + Math.sin(an) * rr, a: an, r: rr, life: 0, max: 1.8 + Math.random() * 1.8, s: 1.6 + Math.random() * 1.6, vx: 0, vy: 0 }; }
+  var side = Math.random() < 0.5 ? -1 : 1, y = G.pl.y + Math.random() * G.pl.h;
+  return { o: 0, x: side < 0 ? Math.random() * (G.pl.x - 8) : G.pl.x + G.pl.w + 8 + Math.random() * (G.W - G.pl.x - G.pl.w - 8), y: y, side: side, life: 0, max: 2 + Math.random() * 2, s: 1.4 + Math.random() * 1, vx: 0, vy: 0 };
+}
+function tzKare(now) {
+  TZ.raf = 0; var cv = document.getElementById("tzCv"); if (!cv) return;
+  var dt = Math.min(0.05, (now - (TZ.son || now)) / 1000); TZ.son = now;
+  var dp = Math.min(2, window.devicePixelRatio || 1), W = cv.clientWidth, H = cv.clientHeight;
+  if (cv.width !== Math.round(W * dp) || cv.height !== Math.round(H * dp)) { cv.width = Math.round(W * dp); cv.height = Math.round(H * dp); }
+  var G = tzGeo(cv), c = cv.getContext("2d"), RM = REDUCED();
+  if (TZ.auto && !RM && now - TZ.t0 > 9000) { TZ.t0 = now; tzSetMode(TZ.mode === "h" ? "c" : "h", true); }
+  TZ.spd += ((TZ.basili ? 3.2 : TZ.hedefSpd) - TZ.spd) * Math.min(1, dt * 2.2);
+  if (!RM) TZ.ang += dt * TZ.spd * 7.5;
+  c.setTransform(dp, 0, 0, dp, 0, 0); c.clearRect(0, 0, W, H);
+  tzFan(c, G);
+  c.drawImage(tzGrille(G, dp), 0, 0, W, H);
+  if (!RM) {
+    var hedefN = Math.round(260 * Math.min(1.8, TZ.spd)), nOut = 0;
+    TZ.P.forEach(function (p) { if (p.o) nOut++; });
+    for (var i = 0; i < 6 && nOut < hedefN; i++, nOut++) TZ.P.push(tzSpawn(G, true));
+    if (TZ.P.length - nOut < 46 && Math.random() < 0.6) TZ.P.push(tzSpawn(G, false));
+    var keep = [];
+    for (var j = 0; j < TZ.P.length; j++) {
+      var p = TZ.P[j]; p.life += dt; if (p.life > p.max) continue;
+      if (p.o) {
+        p.r += (40 + p.r * 1.05) * dt * TZ.spd * 0.55; p.a += dt * TZ.spd * 1.1 * (G.R / Math.max(G.R * 0.3, p.r));
+        var tx = G.fx + Math.cos(p.a) * p.r, ty = G.fy + Math.sin(p.a) * p.r * 0.92;
+        p.x += (tx - p.x) * Math.min(1, dt * 9) + p.vx * dt; p.y += (ty - p.y) * Math.min(1, dt * 9) + p.vy * dt;
+      } else {
+        var ex = p.side < 0 ? G.pl.x + 2 : G.pl.x + G.pl.w - 2, ey = p.y;
+        p.x += (ex - p.x) * dt * 0.9 * TZ.spd + p.vx * dt; p.y += Math.sin(now / 600 + j) * 6 * dt + p.vy * dt;
+        if (Math.abs(p.x - ex) < 4) continue;
+      }
+      var dx = p.x - TZ.mx, dy = p.y - TZ.my, d2 = dx * dx + dy * dy;
+      if (d2 < 7000) { var k = (1 - d2 / 7000) * 900 * dt; p.vx += dx * k * 0.04; p.vy += dy * k * 0.04; }
+      p.vx *= 0.94; p.vy *= 0.94;
+      var t = p.life / p.max, al = p.o ? Math.sin(Math.PI * Math.min(1, t)) * 0.85 : Math.min(1, t * 3) * (1 - t) * 0.6;
+      var sz = p.o ? p.s * (1 + t * 2.2) : p.s;
+      c.fillStyle = tzRenk(al.toFixed(3)); c.fillRect(p.x - sz / 2, p.y - sz / 2, sz, sz);
+      keep.push(p);
+    }
+    TZ.P = keep;
+  }
+  if (!RM && !document.hidden) TZ.raf = requestAnimationFrame(tzKare);
+}
+function tzSetMode(m, auto) {
+  if (!auto) TZ.auto = false; TZ.mode = m; TZ.P.forEach(function (p) { p.max = Math.min(p.max, p.life + 0.6); });
+  var h7 = document.getElementById("h7"); if (!h7) return;
+  Array.prototype.forEach.call(h7.querySelectorAll(".tz-mode button"), function (b) { b.setAttribute("aria-pressed", b.dataset.v === m); });
+  Array.prototype.forEach.call(h7.querySelectorAll(".tz-r[data-k]"), function (r) { r.classList.toggle("on", r.dataset.k === m); });
+  var n = h7.querySelector(".tz-not"); if (n) n.innerHTML = m === "h" ? "Isıtmada dış ünite havadan ısı çeker; fandan <b>soğuk</b> hava çıkar." : "Soğutmada ısı dışarı atılır; fandan <b>sıcak</b> hava çıkar.";
+}
+function heroMount(gel) {
+  var h7 = document.getElementById("h7"), cv = document.getElementById("tzCv"); if (!h7 || !cv) return;
+  if (gel && !REDUCED()) { h7.classList.remove("don"); void h7.offsetWidth; h7.classList.add("don"); }
+  if (!TZ.t0) TZ.t0 = performance.now();
+  var pos = function (e) { var r = cv.getBoundingClientRect(); TZ.mx = e.clientX - r.left; TZ.my = e.clientY - r.top; };
+  cv.onpointermove = pos;
+  cv.onpointerdown = function (e) { pos(e); TZ.basili = true; };
+  cv.onpointerup = cv.onpointercancel = function () { TZ.basili = false; };
+  cv.onpointerleave = function () { TZ.basili = false; TZ.mx = TZ.my = -1e5; };
+  h7.querySelector(".tz-mode").onclick = function (e) { var b = e.target.closest("button"); if (!b) return; e.stopPropagation(); tzSetMode(b.dataset.v, false); };
+  if (TZ.raf) cancelAnimationFrame(TZ.raf); TZ.son = 0; TZ.raf = requestAnimationFrame(tzKare);
+}
+document.addEventListener("visibilitychange", function () { if (!document.hidden && document.getElementById("tzCv") && !TZ.raf) TZ.raf = requestAnimationFrame(tzKare); });
+window.addEventListener("resize", function () { TZ.grille = null; });
 
 /* ---- tam sayfa yapraklar (panel) ---- */
 var PN = { T: [], X: [], av: 0, navH: 0, aktif: -1, anim: null, kilit: 0, sonT: 0, birikim: 0, raf: 0 };
