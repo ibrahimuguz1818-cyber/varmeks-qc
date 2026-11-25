@@ -1486,7 +1486,8 @@ function tzBugun() {
   var kap = S.records.filter(function (r) { return r.closedAt && r.closedAt >= ms; });
   var ncr = gir.concat(isl.filter(function (r) { return gir.indexOf(r) < 0; })).reduce(function (a, r) { return a + (r.ncr || []).length; }, 0);
   var son = isl.slice().sort(function (a, b) { return b.touchedAt - a.touchedAt; })[0] || null;
-  return { gir: gir.length, isl: isl.length, kap: kap.length, ncr: ncr, son: son };
+  var saat = gir.map(function (r) { var t = r.createdAt && r.createdAt >= ms ? new Date(r.createdAt) : r.touchedAt && r.touchedAt >= ms ? new Date(r.touchedAt) : null; return t ? t.getHours() * 60 + t.getMinutes() + t.getSeconds() / 60 : null; }).filter(function (x) { return x !== null; });
+  return { gir: gir.length, isl: isl.length, kap: kap.length, ncr: ncr, son: son, saat: saat };
 }
 function heroHtml() {
   var b = tzBugun();
@@ -1499,25 +1500,28 @@ function heroHtml() {
     '<div class="tz-dev"><canvas id="tzCv" role="img" aria-label="Saat ve bugün girilen cihaz sayısı"></canvas></div></section>';
 }
 function tzSaatCiz(c, W, H, now) {
-  var d = new Date(), sec = d.getSeconds() + d.getMilliseconds() / 1000, cx = W / 2, cy = H / 2, R = Math.min(W, H) * 0.44;
-  var b = TZ.bugun || { gir: 0 };
-  for (var i = 0; i < 60; i++) {
-    var a = -Math.PI / 2 + i * Math.PI / 30, big = i % 5 === 0, r1 = R * (big ? 0.86 : 0.9), r2 = R;
-    var on = i < Math.floor(sec), cur = i === Math.floor(sec);
-    c.strokeStyle = cur ? "#E3262F" : on ? "rgba(31,58,120," + (0.35 + 0.65 * (i / Math.max(1, sec))).toFixed(3) + ")" : "#E3E3E6";
-    c.lineWidth = big ? 4 : 2.6; c.lineCap = "round";
-    c.beginPath(); c.moveTo(cx + Math.cos(a) * r1, cy + Math.sin(a) * r1); c.lineTo(cx + Math.cos(a) * (cur ? R * 1.04 : r2), cy + Math.sin(a) * (cur ? R * 1.04 : r2)); c.stroke();
+  var d = new Date(), cx = W / 2, cy = H / 2, R = Math.min(W, H) * 0.4, V = "#1F3A78", b = TZ.bugun || { gir: 0, saat: [] }, n = b.gir;
+  var bas = (S.settings.vardiyaBas != null ? S.settings.vardiyaBas : 8) * 60, bit = (S.settings.vardiyaBit != null ? S.settings.vardiyaBit : 18) * 60, top = bit - bas;
+  var simdi = d.getHours() * 60 + d.getMinutes() + d.getSeconds() / 60, oran = Math.max(0, Math.min(1, (simdi - bas) / top));
+  var aci = function (m) { return -Math.PI / 2 + ((m - bas) / top) * Math.PI * 2; };
+  c.lineCap = "round";
+  for (var m = bas; m < bit; m += 5) {
+    var a = aci(m), saat = (m - bas) % 60 === 0, on = m <= simdi, r1 = R * (saat ? 0.85 : 0.9);
+    c.strokeStyle = on ? V : "#E3E3E6"; c.globalAlpha = on ? 0.45 + 0.55 * ((m - bas) / Math.max(1, simdi - bas)) : 1; c.lineWidth = saat ? 4 : 2.2;
+    c.beginPath(); c.moveTo(cx + Math.cos(a) * r1, cy + Math.sin(a) * r1); c.lineTo(cx + Math.cos(a) * R, cy + Math.sin(a) * R); c.stroke();
   }
-  var gm = (d.getHours() * 60 + d.getMinutes()) / 1440;
-  c.lineWidth = 2; c.strokeStyle = "#EFEFF1"; c.beginPath(); c.arc(cx, cy, R * 0.76, 0, Math.PI * 2); c.stroke();
-  c.strokeStyle = "#111"; c.beginPath(); c.arc(cx, cy, R * 0.76, -Math.PI / 2, -Math.PI / 2 + gm * Math.PI * 2); c.stroke();
-  var hh = String(d.getHours()).padStart(2, "0"), mm = String(d.getMinutes()).padStart(2, "0");
-  c.textAlign = "center"; c.textBaseline = "alphabetic"; c.fillStyle = "#111";
-  c.font = "400 " + Math.round(R * 0.52) + "px " + DISP; c.fillText(hh + ":" + mm, cx, cy + R * 0.14);
-  c.fillStyle = "#1F3A78"; c.font = "400 " + Math.round(R * 0.16) + "px " + DISP; c.fillText("BUGÜN " + b.gir + " CİHAZ", cx, cy + R * 0.38);
-  c.fillStyle = "#9A9A9A"; c.font = "500 " + Math.max(9, Math.round(R * 0.062)) + "px 'JetBrains Mono',monospace";
-  var tarih = (d.getDate() + " " + AY[d.getMonth()] + " " + GUN[d.getDay()]).toLocaleUpperCase("tr-TR");
-  if ("letterSpacing" in c) c.letterSpacing = "2px"; c.fillText(tarih, cx, cy - R * 0.36); if ("letterSpacing" in c) c.letterSpacing = "0px";
+  c.globalAlpha = 1; c.fillStyle = "#9A9A9A"; c.font = "500 " + Math.max(9, Math.round(R * 0.05)) + "px 'JetBrains Mono',monospace"; c.textAlign = "center"; c.textBaseline = "middle";
+  for (var h = bas; h <= bit - 60; h += 120) { var ah = aci(h); c.fillText(String(Math.round(h / 60)).padStart(2, "0"), cx + Math.cos(ah) * R * 1.12, cy + Math.sin(ah) * R * 1.12); }
+  (b.saat || []).forEach(function (t, k) { if (t < bas || t > bit) return; var ak = aci(t), rr = R * 1.03 + (k % 3) * 5; c.fillStyle = "#111"; c.beginPath(); c.arc(cx + Math.cos(ak) * rr, cy + Math.sin(ak) * rr, 3, 0, Math.PI * 2); c.fill(); });
+  if (simdi >= bas && simdi <= bit) { var an = aci(simdi); c.strokeStyle = "#E3262F"; c.lineWidth = 4; c.beginPath(); c.moveTo(cx + Math.cos(an) * R * 0.8, cy + Math.sin(an) * R * 0.8); c.lineTo(cx + Math.cos(an) * R * 1.06, cy + Math.sin(an) * R * 1.06); c.stroke(); }
+  c.textBaseline = "alphabetic"; c.fillStyle = "#111"; c.font = "400 " + Math.round(R * 0.5) + "px " + DISP;
+  c.fillText(String(d.getHours()).padStart(2, "0") + ":" + String(d.getMinutes()).padStart(2, "0"), cx, cy + R * 0.1);
+  c.fillStyle = V; c.font = "400 " + Math.round(R * 0.16) + "px " + DISP; c.fillText("BUGÜN " + n + " CİHAZ", cx, cy + R * 0.34);
+  var kal = Math.max(0, bit - simdi); c.fillStyle = "#8A8A8A"; c.font = "500 " + Math.max(9, Math.round(R * 0.055)) + "px 'JetBrains Mono',monospace";
+  if ("letterSpacing" in c) c.letterSpacing = "1px";
+  c.fillText(simdi < bas ? "VARDİYA BAŞLAMADI" : simdi > bit ? "VARDİYA BİTTİ" : "VARDİYA %" + Math.round(oran * 100) + " · KALAN " + Math.floor(kal / 60) + " SA " + Math.floor(kal % 60) + " DK", cx, cy + R * 0.5);
+  c.fillText("● = GİRİLEN CİHAZ", cx, cy - R * 0.4);
+  if ("letterSpacing" in c) c.letterSpacing = "0px";
 }
 function tozHazirla(cv, dp) {
   var W = cv.width, H = cv.height, o = document.createElement("canvas"); o.width = W; o.height = H;
